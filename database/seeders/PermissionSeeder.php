@@ -11,234 +11,264 @@ use Illuminate\Database\Seeder;
  * Crea todos los permisos del sistema.
  * Los permisos son globales y se asignan a roles.
  *
- * Convención de nombres: {recurso}.{accion}
- * Ejemplos: factura.ver, factura.crear, usuario.aprobar
+ * Convención de nombres: {recurso_plural}.{accion}
+ * Ejemplos: facturas.view, facturas.create, usuarios.approve
  */
 class PermissionSeeder extends Seeder
 {
     /**
      * Definición de todos los permisos del sistema
+     * Formato compatible con el sidebar y el sistema anterior
      */
     private array $permissions = [
         // ========== FACTURAS ==========
         [
-            'name' => 'factura.ver',
+            'name' => 'facturas.view',
+            'slug' => 'facturas-view',
             'display_name' => 'Ver facturas',
             'description' => 'Permite ver el listado y detalle de facturas',
-            'resource' => 'factura',
-            'action' => 'ver',
+            'resource' => 'facturas',
+            'action' => 'view',
         ],
         [
-            'name' => 'factura.crear',
+            'name' => 'facturas.create',
+            'slug' => 'facturas-create',
             'display_name' => 'Crear facturas',
             'description' => 'Permite crear nuevas facturas manualmente',
-            'resource' => 'factura',
-            'action' => 'crear',
+            'resource' => 'facturas',
+            'action' => 'create',
         ],
         [
-            'name' => 'factura.editar',
+            'name' => 'facturas.edit',
+            'slug' => 'facturas-edit',
             'display_name' => 'Editar facturas',
             'description' => 'Permite modificar facturas existentes',
-            'resource' => 'factura',
-            'action' => 'editar',
+            'resource' => 'facturas',
+            'action' => 'edit',
         ],
         [
-            'name' => 'factura.eliminar',
+            'name' => 'facturas.delete',
+            'slug' => 'facturas-delete',
             'display_name' => 'Eliminar facturas',
             'description' => 'Permite eliminar facturas del sistema',
-            'resource' => 'factura',
-            'action' => 'eliminar',
+            'resource' => 'facturas',
+            'action' => 'delete',
         ],
         [
-            'name' => 'factura.exportar',
+            'name' => 'facturas.export',
+            'slug' => 'facturas-export',
             'display_name' => 'Exportar facturas',
             'description' => 'Permite exportar facturas a Excel/PDF',
-            'resource' => 'factura',
-            'action' => 'exportar',
+            'resource' => 'facturas',
+            'action' => 'export',
         ],
 
         // ========== TERCEROS ==========
         [
-            'name' => 'tercero.ver',
+            'name' => 'terceros.view',
+            'slug' => 'terceros-view',
             'display_name' => 'Ver terceros',
             'description' => 'Permite ver el listado y detalle de terceros',
-            'resource' => 'tercero',
-            'action' => 'ver',
+            'resource' => 'terceros',
+            'action' => 'view',
         ],
         [
-            'name' => 'tercero.crear',
+            'name' => 'terceros.create',
+            'slug' => 'terceros-create',
             'display_name' => 'Crear terceros',
             'description' => 'Permite crear nuevos terceros/clientes',
-            'resource' => 'tercero',
-            'action' => 'crear',
+            'resource' => 'terceros',
+            'action' => 'create',
         ],
         [
-            'name' => 'tercero.editar',
+            'name' => 'terceros.edit',
+            'slug' => 'terceros-edit',
             'display_name' => 'Editar terceros',
             'description' => 'Permite modificar terceros existentes',
-            'resource' => 'tercero',
-            'action' => 'editar',
+            'resource' => 'terceros',
+            'action' => 'edit',
         ],
         [
-            'name' => 'tercero.eliminar',
+            'name' => 'terceros.delete',
+            'slug' => 'terceros-delete',
             'display_name' => 'Eliminar terceros',
             'description' => 'Permite eliminar terceros del sistema',
-            'resource' => 'tercero',
-            'action' => 'eliminar',
+            'resource' => 'terceros',
+            'action' => 'delete',
         ],
         [
-            'name' => 'tercero.fusionar',
+            'name' => 'terceros.merge',
+            'slug' => 'terceros-merge',
             'display_name' => 'Fusionar terceros',
             'description' => 'Permite fusionar terceros duplicados',
-            'resource' => 'tercero',
-            'action' => 'fusionar',
+            'resource' => 'terceros',
+            'action' => 'merge',
         ],
 
-        // ========== IMPORTACIÓN ==========
+        // ========== IMPORTACIONES ==========
         [
-            'name' => 'importacion.ver',
+            'name' => 'importaciones.view',
+            'slug' => 'importaciones-view',
             'display_name' => 'Ver importaciones',
             'description' => 'Permite ver el historial de importaciones',
-            'resource' => 'importacion',
-            'action' => 'ver',
+            'resource' => 'importaciones',
+            'action' => 'view',
         ],
         [
-            'name' => 'importacion.ejecutar',
+            'name' => 'importaciones.execute',
+            'slug' => 'importaciones-execute',
             'display_name' => 'Ejecutar importaciones',
             'description' => 'Permite importar archivos Excel y PDF',
-            'resource' => 'importacion',
-            'action' => 'ejecutar',
+            'resource' => 'importaciones',
+            'action' => 'execute',
         ],
         [
-            'name' => 'importacion.configurar',
+            'name' => 'importaciones.configure',
+            'slug' => 'importaciones-configure',
             'display_name' => 'Configurar importaciones',
             'description' => 'Permite configurar mapeo de columnas y opciones',
-            'resource' => 'importacion',
-            'action' => 'configurar',
+            'resource' => 'importaciones',
+            'action' => 'configure',
         ],
 
         // ========== USUARIOS ==========
         [
-            'name' => 'usuario.ver',
+            'name' => 'usuarios.view',
+            'slug' => 'usuarios-view',
             'display_name' => 'Ver usuarios',
             'description' => 'Permite ver el listado de usuarios',
-            'resource' => 'usuario',
-            'action' => 'ver',
+            'resource' => 'usuarios',
+            'action' => 'view',
         ],
         [
-            'name' => 'usuario.crear',
+            'name' => 'usuarios.create',
+            'slug' => 'usuarios-create',
             'display_name' => 'Crear usuarios',
             'description' => 'Permite crear nuevos usuarios',
-            'resource' => 'usuario',
-            'action' => 'crear',
+            'resource' => 'usuarios',
+            'action' => 'create',
         ],
         [
-            'name' => 'usuario.editar',
+            'name' => 'usuarios.edit',
+            'slug' => 'usuarios-edit',
             'display_name' => 'Editar usuarios',
             'description' => 'Permite modificar usuarios existentes',
-            'resource' => 'usuario',
-            'action' => 'editar',
+            'resource' => 'usuarios',
+            'action' => 'edit',
         ],
         [
-            'name' => 'usuario.eliminar',
+            'name' => 'usuarios.delete',
+            'slug' => 'usuarios-delete',
             'display_name' => 'Eliminar usuarios',
             'description' => 'Permite eliminar usuarios del sistema',
-            'resource' => 'usuario',
-            'action' => 'eliminar',
+            'resource' => 'usuarios',
+            'action' => 'delete',
         ],
         [
-            'name' => 'usuario.aprobar',
+            'name' => 'usuarios.approve',
+            'slug' => 'usuarios-approve',
             'display_name' => 'Aprobar usuarios',
-            'description' => 'Permite aprobar o rechazar solicitudes de registro',
-            'resource' => 'usuario',
-            'action' => 'aprobar',
+            'description' => 'Permite aprobar usuarios pendientes',
+            'resource' => 'usuarios',
+            'action' => 'approve',
         ],
         [
-            'name' => 'usuario.cambiar_rol',
-            'display_name' => 'Cambiar rol de usuarios',
-            'description' => 'Permite asignar/cambiar el rol de usuarios',
-            'resource' => 'usuario',
-            'action' => 'cambiar_rol',
+            'name' => 'usuarios.manage',
+            'slug' => 'usuarios-manage',
+            'display_name' => 'Gestionar usuarios',
+            'description' => 'Permite gestionar usuarios (cambiar rol, bloquear)',
+            'resource' => 'usuarios',
+            'action' => 'manage',
         ],
 
-        // ========== ROLES Y PERMISOS ==========
+        // ========== ROLES ==========
         [
-            'name' => 'rol.ver',
+            'name' => 'roles.view',
+            'slug' => 'roles-view',
             'display_name' => 'Ver roles',
-            'description' => 'Permite ver el listado de roles',
-            'resource' => 'rol',
-            'action' => 'ver',
+            'description' => 'Permite ver roles y sus permisos',
+            'resource' => 'roles',
+            'action' => 'view',
         ],
         [
-            'name' => 'rol.gestionar',
+            'name' => 'roles.manage',
+            'slug' => 'roles-manage',
             'display_name' => 'Gestionar roles',
             'description' => 'Permite crear, editar y eliminar roles',
-            'resource' => 'rol',
-            'action' => 'gestionar',
+            'resource' => 'roles',
+            'action' => 'manage',
         ],
 
         // ========== AUDITORÍA ==========
         [
-            'name' => 'auditoria.ver',
+            'name' => 'auditoria.view',
+            'slug' => 'auditoria-view',
             'display_name' => 'Ver auditoría',
-            'description' => 'Permite ver los logs de auditoría',
+            'description' => 'Permite ver los registros de auditoría',
             'resource' => 'auditoria',
-            'action' => 'ver',
+            'action' => 'view',
         ],
         [
-            'name' => 'auditoria.exportar',
+            'name' => 'auditoria.export',
+            'slug' => 'auditoria-export',
             'display_name' => 'Exportar auditoría',
-            'description' => 'Permite exportar logs de auditoría',
+            'description' => 'Permite exportar registros de auditoría',
             'resource' => 'auditoria',
-            'action' => 'exportar',
+            'action' => 'export',
         ],
 
         // ========== CONFIGURACIÓN ==========
         [
-            'name' => 'config.ver',
+            'name' => 'configuracion.view',
+            'slug' => 'configuracion-view',
             'display_name' => 'Ver configuración',
             'description' => 'Permite ver la configuración del sistema',
-            'resource' => 'config',
-            'action' => 'ver',
+            'resource' => 'configuracion',
+            'action' => 'view',
         ],
         [
-            'name' => 'config.editar',
+            'name' => 'configuracion.edit',
+            'slug' => 'configuracion-edit',
             'display_name' => 'Editar configuración',
             'description' => 'Permite modificar la configuración del sistema',
-            'resource' => 'config',
-            'action' => 'editar',
+            'resource' => 'configuracion',
+            'action' => 'edit',
         ],
 
         // ========== DASHBOARD ==========
         [
-            'name' => 'dashboard.ver',
+            'name' => 'dashboard.view',
+            'slug' => 'dashboard-view',
             'display_name' => 'Ver dashboard',
-            'description' => 'Permite ver el dashboard con estadísticas',
+            'description' => 'Permite ver el dashboard principal',
             'resource' => 'dashboard',
-            'action' => 'ver',
+            'action' => 'view',
         ],
         [
-            'name' => 'dashboard.exportar',
-            'display_name' => 'Exportar reportes',
-            'description' => 'Permite exportar reportes del dashboard',
+            'name' => 'dashboard.export',
+            'slug' => 'dashboard-export',
+            'display_name' => 'Exportar dashboard',
+            'description' => 'Permite exportar datos del dashboard',
             'resource' => 'dashboard',
-            'action' => 'exportar',
+            'action' => 'export',
         ],
 
-        // ========== ADMINISTRACIÓN ==========
+        // ========== ADMINISTRACIÓN GLOBAL ==========
         [
-            'name' => 'admin.gestionar_roles',
-            'display_name' => 'Gestionar roles',
-            'description' => 'Acceso completo a la gestión de roles y permisos',
+            'name' => 'admin.tenants',
+            'slug' => 'admin-tenants',
+            'display_name' => 'Gestionar tenants',
+            'description' => 'Permite gestionar tenants/empresas',
             'resource' => 'admin',
-            'action' => 'gestionar_roles',
+            'action' => 'tenants',
         ],
         [
-            'name' => 'admin.gestionar_usuarios',
-            'display_name' => 'Gestionar usuarios',
-            'description' => 'Acceso completo a la gestión de usuarios',
+            'name' => 'admin.system',
+            'slug' => 'admin-system',
+            'display_name' => 'Administración del sistema',
+            'description' => 'Acceso completo a la administración del sistema',
             'resource' => 'admin',
-            'action' => 'gestionar_usuarios',
+            'action' => 'system',
         ],
     ];
 
@@ -246,20 +276,22 @@ class PermissionSeeder extends Seeder
     {
         $this->command->info('📋 Creando permisos del sistema...');
 
-        foreach ($this->permissions as $permissionData) {
+        $count = 0;
+        foreach ($this->permissions as $permData) {
             Permission::updateOrCreate(
-                ['name' => $permissionData['name']],
+                ['name' => $permData['name']],
                 [
-                    'slug' => $permissionData['name'],
-                    'display_name' => $permissionData['display_name'],
-                    'description' => $permissionData['description'],
-                    'resource' => $permissionData['resource'],
-                    'action' => $permissionData['action'],
+                    'slug' => $permData['slug'],
+                    'display_name' => $permData['display_name'],
+                    'description' => $permData['description'],
+                    'resource' => $permData['resource'],
+                    'action' => $permData['action'],
                 ]
             );
+            $count++;
         }
 
-        $this->command->info('   ✅ ' . count($this->permissions) . ' permisos creados');
+        $this->command->info("   ✅ {$count} permisos creados");
     }
 }
 

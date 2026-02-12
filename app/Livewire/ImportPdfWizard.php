@@ -21,6 +21,7 @@ class ImportPdfWizard extends Component
     // Archivos subidos
     public $pdfFiles = [];
     public array $uploadedFiles = [];
+    public array $storedPaths = []; // Rutas de archivos ya guardados
     public int $totalFilesSize = 0;
 
     // Opciones de importación
@@ -78,25 +79,74 @@ class ImportPdfWizard extends Component
     ];
 
     /**
-     * Cuando se suben archivos
+     * Cuando se suben archivos - guardar inmediatamente
      */
     public function updatedPdfFiles()
     {
-        $this->validateOnly('pdfFiles.*');
-
         $this->uploadedFiles = [];
+        $this->storedPaths = [];
         $this->totalFilesSize = 0;
 
-        foreach ($this->pdfFiles as $file) {
-            $this->uploadedFiles[] = [
-                'name' => $file->getClientOriginalName(),
-                'size' => $file->getSize(),
-                'path' => $file->getRealPath(),
-            ];
-            $this->totalFilesSize += $file->getSize();
+        if (!$this->pdfFiles || !is_array($this->pdfFiles)) {
+            Log::warning("pdfFiles está vacío o no es array", ['pdfFiles' => $this->pdfFiles]);
+            return;
+        }
+
+        Log::info("Procesando archivos PDF", ['count' => count($this->pdfFiles)]);
+
+        foreach ($this->pdfFiles as $index => $file) {
+            try {
+                // Verificar que el archivo sea válido
+                if (!$file || !method_exists($file, 'store')) {
+                    Log::warning("Archivo inválido en índice {$index}");
+                    continue;
+                }
+
+                $fileName = $file->getClientOriginalName();
+                $fileSize = $file->getSize();
+
+                // Guardar archivo inmediatamente para evitar que expire
+                $storedPath = $file->store('imports/temp-pdf', 'local');
+                $fullPath = Storage::disk('local')->path($storedPath);
+
+                Log::info("PDF guardado", [
+                    'index' => $index,
+                    'name' => $fileName,
+                    'storedPath' => $storedPath,
+                    'exists' => file_exists($fullPath),
+                    'size' => file_exists($fullPath) ? filesize($fullPath) : 0,
+                ]);
+
+                if (file_exists($fullPath)) {
+                    $this->uploadedFiles[] = [
+                        'name' => $fileName,
+                        'size' => $fileSize,
+                        'stored_path' => $storedPath,
+                    ];
+                    $this->storedPaths[] = $storedPath;
+                    $this->totalFilesSize += $fileSize;
+                }
+            } catch (\Exception $e) {
+                Log::error("Error guardando PDF", [
+                    'index' => $index,
+                    'error' => $e->getMessage(),
+                ]);
+                // NO agregar error aquí para no interrumpir los demás archivos
+            }
         }
 
         $this->totalFiles = count($this->uploadedFiles);
+
+        Log::info("Archivos procesados", [
+            'totalFiles' => $this->totalFiles,
+            'uploadedFiles' => count($this->uploadedFiles),
+            'storedPaths' => count($this->storedPaths),
+        ]);
+
+        // Si no se guardó ningún archivo, mostrar error
+        if ($this->totalFiles === 0) {
+            $this->addError('pdfFiles', 'No se pudo cargar ningún archivo PDF. Intente de nuevo.');
+        }
     }
 
     /**
@@ -104,7 +154,12 @@ class ImportPdfWizard extends Component
      */
     public function analyzeFiles()
     {
-        if (empty($this->pdfFiles)) {
+        Log::info('ImportPdfWizard::analyzeFiles iniciado', [
+            'uploadedFiles_count' => count($this->uploadedFiles),
+            'storedPaths_count' => count($this->storedPaths),
+        ]);
+
+        if (empty($this->uploadedFiles)) {
             $this->addError('pdfFiles', 'Debe seleccionar al menos un archivo PDF');
             return;
         }
@@ -121,12 +176,21 @@ class ImportPdfWizard extends Component
         $service = app(PDFCufeExtractorService::class);
 
         try {
-            foreach ($this->pdfFiles as $index => $file) {
-                $this->currentFile = $file->getClientOriginalName();
-
-                // Guardar archivo temporalmente
-                $tempPath = $file->store('imports/temp-pdf', 'local');
+            foreach ($this->uploadedFiles as $index => $fileData) {
+                $this->currentFile = $fileData['name'];
+                $tempPath = $fileData['stored_path'];
                 $fullPath = Storage::disk('local')->path($tempPath);
+
+                Log::info("Analizando archivo PDF #{$index}", [
+                    'name' => $fileData['name'],
+                    'tempPath' => $tempPath,
+                    'fullPath' => $fullPath,
+                    'exists' => file_exists($fullPath),
+                ]);
+
+                if (!file_exists($fullPath)) {
+                    throw new \Exception("El archivo no existe: {$fullPath}");
+                }
 
                 // Cargar y analizar PDF
                 $pdfInfo = $service->cargarPDF($fullPath);
@@ -136,8 +200,8 @@ class ImportPdfWizard extends Component
                 $comparacion = $service->compararConBD($cufes, $tenantId);
 
                 $fileResult = [
-                    'name' => $file->getClientOriginalName(),
-                    'size' => $file->getSize(),
+                    'name' => $fileData['name'],
+                    'size' => $fileData['size'],
                     'pages' => $pdfInfo['total_paginas'],
                     'temp_path' => $tempPath,
                     'cufes' => $cufes,
@@ -370,10 +434,16 @@ class ImportPdfWizard extends Component
             }
         }
 
+        // Limpiar archivos guardados en storedPaths
+        foreach ($this->storedPaths as $path) {
+            Storage::disk('local')->delete($path);
+        }
+
         $this->reset([
             'currentStep',
             'pdfFiles',
             'uploadedFiles',
+            'storedPaths',
             'totalFilesSize',
             'analysisResults',
             'totalCufesFound',
@@ -391,7 +461,7 @@ class ImportPdfWizard extends Component
             'errorCount',
             'currentFile',
             'currentCufe',
-            'errors',
+            'importErrors',
             'processingLog',
             'importLogId',
             'summary',

@@ -250,12 +250,23 @@ class CreateSuperadmin extends Command
 
         if (!$adminRole) {
             $this->warn('⚠️  No existe el rol "administrador" para este tenant.');
-            if ($this->confirm('¿Crear usuario sin rol asignado?', false)) {
-                $adminRole = null;
-            } else {
+
+            // Si --force, salir con error (no preguntar)
+            if ($this->option('force')) {
+                $this->error('   ❌ Ejecuta primero los seeders para crear los roles.');
+                return Command::FAILURE;
+            }
+
+            if (!$this->confirm('¿Crear usuario sin rol asignado?', false)) {
                 $this->info('Ejecuta primero los seeders para crear los roles.');
                 return Command::FAILURE;
             }
+            // Si confirma, adminRole queda null
+        }
+
+        // Mostrar info del rol encontrado
+        if ($adminRole) {
+            $this->line("   ✅ Rol encontrado: {$adminRole->name} (ID={$adminRole->id})");
         }
 
         // Confirmación en producción
