@@ -8,6 +8,15 @@ use Illuminate\Database\Seeder;
  * DatabaseSeeder
  *
  * Seeder principal que orquesta la ejecución de todos los seeders.
+ *
+ * ORDEN DE EJECUCIÓN:
+ * 1. SystemUserSeeder - Usuario SYSTEM (ID=1) para auditoría [OBLIGATORIO]
+ * 2. PermissionSeeder - Permisos del sistema
+ * 3. SystemSeeder - Superadmin global + Tenant demo + Tema
+ * 4. RoleSeeder - Roles con permisos
+ * 5. UserSeeder - Usuarios de demostración
+ * 6. SetupSeeder - Checkpoints del setup
+ *
  * Ejecutar con: php artisan db:seed
  */
 class DatabaseSeeder extends Seeder
@@ -20,19 +29,26 @@ class DatabaseSeeder extends Seeder
         $this->command->info('🚀 Iniciando seeders del sistema SGDEA...');
         $this->command->newLine();
 
-        // 1. Permisos del sistema (globales, no dependen de tenant)
+        // ============================================
+        // 1. USUARIO SYSTEM - OBLIGATORIO Y PRIMERO
+        // ============================================
+        // Este usuario es requerido por el sistema de auditoría.
+        // Debe crearse ANTES de cualquier otra entidad que use Auditable.
+        $this->call(SystemUserSeeder::class);
+
+        // 2. Permisos del sistema (globales, no dependen de tenant)
         $this->call(PermissionSeeder::class);
 
-        // 2. Sistema: Admin global y tenant de demostración
+        // 3. Sistema: Admin global y tenant de demostración
         $this->call(SystemSeeder::class);
 
-        // 3. Roles base (dependen de tenant y permisos)
+        // 4. Roles base (dependen de tenant y permisos)
         $this->call(RoleSeeder::class);
 
-        // 4. Usuarios de demostración (dependen de tenant y roles)
+        // 5. Usuarios de demostración (dependen de tenant y roles)
         $this->call(UserSeeder::class);
 
-        // 5. Checkpoints del setup
+        // 6. Checkpoints del setup
         $this->call(SetupSeeder::class);
 
         $this->command->newLine();

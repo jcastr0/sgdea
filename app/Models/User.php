@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +13,36 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Auditable;
+
+    // ===========================
+    // CONSTANTES
+    // ===========================
+
+    /**
+     * ID del usuario SYSTEM (para acciones sin autenticación)
+     * Este usuario no puede iniciar sesión, solo se usa para auditoría
+     */
+    public const SYSTEM_ID = 1;
+
+    /**
+     * Email del usuario SYSTEM
+     */
+    public const SYSTEM_EMAIL = 'system@sgdea.local';
+
+    // ===========================
+    // CAMPOS A EXCLUIR DE AUDITORÍA
+    // ===========================
+
+    /**
+     * Campos que no deben registrarse en auditoría (datos sensibles)
+     */
+    protected array $auditExclude = [
+        'password',
+        'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+    ];
 
     /**
      * The attributes that are mass assignable.

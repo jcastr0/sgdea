@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ThemeConfiguration extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'tenant_id',
         'color_primary',
