@@ -1,0 +1,543 @@
+@import 'tailwindcss';
+
+/* Configurar dark mode por clase */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* ===========================================
+       SISTEMA DE DISEÑO SGDEA - Plan UIX
+       =========================================== */
+
+    /* Colores primarios del tema (con soporte multi-tenant) */
+    --color-primary: var(--tenant-primary, #2563eb);       /* blue-600 */
+    --color-primary-hover: var(--tenant-primary-hover, #1d4ed8); /* blue-700 */
+    --color-primary-light: var(--tenant-primary-light, #60a5fa); /* blue-400 */
+    --color-primary-dark: var(--tenant-primary-dark, #1e40af);   /* blue-800 */
+
+    /* Colores secundarios */
+    --color-secondary: var(--tenant-secondary, #475569);   /* slate-600 */
+    --color-secondary-hover: var(--tenant-secondary-hover, #334155); /* slate-700 */
+    --color-accent: var(--tenant-accent, #06b6d4);         /* cyan-500 */
+
+    /* Colores semánticos */
+    --color-success: #22c55e;          /* green-500 */
+    --color-success-hover: #16a34a;    /* green-600 */
+    --color-success-light: #dcfce7;    /* green-100 */
+    --color-warning: #f59e0b;          /* amber-500 */
+    --color-warning-hover: #d97706;    /* amber-600 */
+    --color-warning-light: #fef3c7;    /* amber-100 */
+    --color-danger: #ef4444;           /* red-500 */
+    --color-danger-hover: #dc2626;     /* red-600 */
+    --color-danger-light: #fee2e2;     /* red-100 */
+    --color-info: #06b6d4;             /* cyan-500 */
+    --color-info-hover: #0891b2;       /* cyan-600 */
+    --color-info-light: #cffafe;       /* cyan-100 */
+
+    /* Backgrounds (Light Mode) */
+    --color-background: #f8fafc;       /* slate-50 */
+    --color-surface: #ffffff;          /* white */
+    --color-surface-hover: #f1f5f9;    /* slate-100 */
+
+    /* Backgrounds (Dark Mode - usar con clase dark:) */
+    --color-background-dark: #0f172a;  /* slate-900 */
+    --color-surface-dark: #1e293b;     /* slate-800 */
+    --color-surface-hover-dark: #334155; /* slate-700 */
+
+    /* Grises - Escala completa */
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+    --color-gray-800: #1f2937;
+    --color-gray-900: #111827;
+    --color-gray-950: #030712;
+
+    /* Bordes y sombras */
+    --color-border: #e2e8f0;           /* slate-200 */
+    --color-border-dark: #334155;      /* slate-700 */
+    --color-ring: #3b82f6;             /* blue-500 */
+    --color-ring-offset: #ffffff;
+
+    /* Tamaños de fuente base */
+    --font-size-xs: 0.75rem;    /* 12px */
+    --font-size-sm: 0.875rem;   /* 14px */
+    --font-size-base: 1rem;     /* 16px */
+    --font-size-lg: 1.125rem;   /* 18px */
+    --font-size-xl: 1.25rem;    /* 20px */
+    --font-size-2xl: 1.5rem;    /* 24px */
+    --font-size-3xl: 1.875rem;  /* 30px */
+
+    /* Border radius */
+    --radius-sm: 0.25rem;       /* 4px */
+    --radius-md: 0.375rem;      /* 6px */
+    --radius-lg: 0.5rem;        /* 8px */
+    --radius-xl: 0.75rem;       /* 12px */
+    --radius-2xl: 1rem;         /* 16px */
+    --radius-full: 9999px;
+
+    /* Sombras */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* Transiciones */
+    --transition-fast: 150ms;
+    --transition-normal: 300ms;
+    --transition-slow: 500ms;
+
+    /* Z-index scale */
+    --z-dropdown: 10;
+    --z-sticky: 20;
+    --z-fixed: 30;
+    --z-modal-backdrop: 40;
+    --z-modal: 50;
+    --z-popover: 60;
+    --z-tooltip: 70;
+}
+
+/* Animaciones personalizadas */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-slow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Clases utilitarias personalizadas */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+
+.animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Glassmorphism */
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Focus styles mejorados */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Transiciones suaves */
+.transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+}
+
+/* ===========================================
+   COMPONENTES BASE - Sistema de Diseño
+   =========================================== */
+
+/* Botones base - usando CSS puro para compatibilidad con Tailwind 4 */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.btn:focus {
+    ring: 2px;
+    ring-offset: 2px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+}
+
+.btn-secondary {
+    @apply bg-slate-600 text-white hover:bg-slate-700 focus:ring-slate-500;
+}
+
+.btn-success {
+    @apply bg-green-500 text-white hover:bg-green-600 focus:ring-green-500;
+}
+
+.btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600 focus:ring-red-500;
+}
+
+.btn-warning {
+    @apply bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500;
+}
+
+.btn-outline {
+    @apply border-2 border-blue-600 text-blue-600 bg-transparent
+           hover:bg-blue-600 hover:text-white focus:ring-blue-500;
+}
+
+.btn-ghost {
+    @apply text-slate-600 bg-transparent hover:bg-slate-100 focus:ring-slate-500;
+}
+
+.btn-sm {
+    @apply px-3 py-1.5 text-xs;
+}
+
+.btn-lg {
+    @apply px-6 py-3 text-base;
+}
+
+/* Inputs base */
+.input {
+    @apply block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg
+           bg-white text-slate-900 placeholder-slate-400
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+           disabled:bg-slate-100 disabled:cursor-not-allowed
+           transition-colors duration-200;
+}
+
+.input-error {
+    @apply border-red-500 focus:ring-red-500;
+}
+
+.input-success {
+    @apply border-green-500 focus:ring-green-500;
+}
+
+/* Select base */
+.select {
+    @apply block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg
+           bg-white text-slate-900 placeholder-slate-400
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+           disabled:bg-slate-100 disabled:cursor-not-allowed
+           transition-colors duration-200 appearance-none bg-no-repeat pr-10;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-size: 1.5em 1.5em;
+}
+
+/* Labels */
+.label {
+    @apply block text-sm font-medium text-slate-700 mb-1;
+}
+
+.label-error {
+    @apply text-red-600;
+}
+
+/* Cards */
+.card {
+    @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden;
+}
+
+.card-header {
+    @apply px-6 py-4 border-b border-slate-200 bg-slate-50;
+}
+
+.card-body {
+    @apply p-6;
+}
+
+.card-footer {
+    @apply px-6 py-4 border-t border-slate-200 bg-slate-50;
+}
+
+/* Badges */
+.badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-primary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+}
+
+.badge-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
+}
+
+.badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800;
+}
+
+.badge-danger {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800;
+}
+
+.badge-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800;
+}
+
+.badge-gray {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800;
+}
+
+/* Alertas */
+.alert {
+    @apply p-4 rounded-lg border flex items-start gap-3;
+}
+
+.alert-success {
+    @apply p-4 rounded-lg border flex items-start gap-3 bg-green-50 border-green-200 text-green-800;
+}
+
+.alert-warning {
+    @apply p-4 rounded-lg border flex items-start gap-3 bg-amber-50 border-amber-200 text-amber-800;
+}
+
+.alert-danger {
+    @apply p-4 rounded-lg border flex items-start gap-3 bg-red-50 border-red-200 text-red-800;
+}
+
+.alert-info {
+    @apply p-4 rounded-lg border flex items-start gap-3 bg-blue-50 border-blue-200 text-blue-800;
+}
+
+/* Tablas */
+.table-container {
+    @apply overflow-x-auto rounded-lg border border-slate-200;
+}
+
+.table {
+    @apply min-w-full divide-y divide-slate-200;
+}
+
+.table thead {
+    @apply bg-slate-50;
+}
+
+.table th {
+    @apply px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider;
+}
+
+.table td {
+    @apply px-6 py-4 text-sm text-slate-700 whitespace-nowrap;
+}
+
+.table tbody tr {
+    @apply bg-white hover:bg-slate-50 transition-colors duration-150;
+}
+
+.table tbody tr:not(:last-child) {
+    @apply border-b border-slate-200;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-[var(--z-modal-backdrop)];
+}
+
+.modal-content {
+    @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+           bg-white rounded-xl shadow-xl z-[var(--z-modal)]
+           w-full max-w-lg max-h-[90vh] overflow-auto;
+}
+
+/* Dropdown */
+.dropdown-menu {
+    @apply absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg
+           border border-slate-200 py-1 z-[var(--z-dropdown)];
+}
+
+.dropdown-item {
+    @apply block w-full px-4 py-2 text-sm text-slate-700 text-left
+           hover:bg-slate-100 transition-colors duration-150;
+}
+
+/* Sidebar Navigation */
+.nav-item {
+    @apply flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg
+           text-slate-600 hover:bg-slate-100 hover:text-slate-900
+           transition-all duration-200;
+}
+
+.nav-item.active {
+    @apply bg-blue-50 text-blue-700;
+}
+
+.nav-item-icon {
+    @apply w-5 h-5 flex-shrink-0;
+}
+
+/* Loading spinner */
+.spinner {
+    @apply animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full;
+}
+
+/* Skeleton loading */
+.skeleton {
+    @apply animate-pulse bg-slate-200 rounded;
+}
+
+/* Tooltip */
+.tooltip {
+    @apply absolute z-[var(--z-tooltip)] px-2 py-1 text-xs font-medium text-white
+           bg-slate-900 rounded shadow-lg whitespace-nowrap;
+}
+
+/* Form groups */
+.form-group {
+    @apply mb-4;
+}
+
+.form-error {
+    @apply mt-1 text-sm text-red-600;
+}
+
+.form-hint {
+    @apply mt-1 text-sm text-slate-500;
+}
+
+/* Page header */
+.page-header {
+    @apply mb-6;
+}
+
+.page-title {
+    @apply text-2xl font-bold text-slate-900;
+}
+
+.page-description {
+    @apply mt-1 text-sm text-slate-500;
+}
+
+/* Stats cards */
+.stat-card {
+    @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-6;
+}
+
+.stat-value {
+    @apply text-3xl font-bold text-slate-900;
+}
+
+.stat-label {
+    @apply text-sm font-medium text-slate-500;
+}
+
+.stat-change {
+    @apply text-sm font-medium;
+}
+
+.stat-change.positive {
+    @apply text-green-600;
+}
+
+.stat-change.negative {
+    @apply text-red-600;
+}
+
+/* Divider */
+.divider {
+    @apply border-t border-slate-200 my-4;
+}
+
+/* Avatar */
+.avatar {
+    @apply inline-flex items-center justify-center rounded-full bg-slate-200 text-slate-600 font-medium;
+}
+
+.avatar-sm {
+    @apply w-8 h-8 text-xs;
+}
+
+.avatar-md {
+    @apply w-10 h-10 text-sm;
+}
+
+.avatar-lg {
+    @apply w-12 h-12 text-base;
+}
+
+/* Empty state */
+.empty-state {
+    @apply text-center py-12;
+}
+
+.empty-state-icon {
+    @apply mx-auto h-12 w-12 text-slate-400;
+}
+
+.empty-state-title {
+    @apply mt-4 text-lg font-medium text-slate-900;
+}
+
+.empty-state-description {
+    @apply mt-2 text-sm text-slate-500;
+}
+

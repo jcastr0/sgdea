@@ -1,0 +1,59 @@
+/vendor/
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# .env files - NUNCA subas variables sensibles
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Keys & Secrets
+*.key
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Laravel
+/storage/logs/*
+/storage/app/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+!/storage/.gitkeep
+
+# Bootstrap
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+
+# Composer Lock (opcional - para proyectos, mantener lock)
+# composer.lock
+
+# Public uploads (si se guarda en public/)
+/public/uploads/*
+/public/storage
+
+# Testing
+/tests/coverage/
+.phpunit.result.cache
+
+# Archivos de sistema
+Thumbs.db
+.env.*.local
+.env.*.private
+
+# Docker (archivos de desarrollo)
+.dockerignore
+docker-compose.override.yml
+
+# Desarrollo local
+.setup_completed
+database/database.sqlite
+
