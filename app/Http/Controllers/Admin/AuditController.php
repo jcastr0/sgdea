@@ -13,86 +13,11 @@ class AuditController extends Controller
 {
     /**
      * Listar auditoría del tenant actual
-     * - Admin de tenant ve solo su tenant
-     * - Usuario normal ve solo sus propias acciones
+     * La lógica de datos está en el componente Livewire AuditoriaTable
      */
     public function index(Request $request)
     {
-        $user = auth()->user();
-        $tenantId = session('tenant_id');
-
-        // Base query - filtrar por tenant
-        $query = AuditLog::where('tenant_id', $tenantId);
-
-        // Si no es admin del tenant, solo ve sus propias acciones
-        if (!$user->isAdminTenant()) {
-            $query->where('user_id', $user->id);
-        }
-
-        // Filtro por usuario
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        // Filtro por acción
-        if ($request->filled('action')) {
-            $query->where('action', $request->action);
-        }
-
-        // Filtro por tipo de modelo
-        if ($request->filled('model_type')) {
-            $query->where('model_type', 'LIKE', '%' . $request->model_type . '%');
-        }
-
-        // Filtro por rango de fechas
-        if ($request->filled('fecha_inicio')) {
-            $query->whereDate('created_at', '>=', $request->fecha_inicio);
-        }
-        if ($request->filled('fecha_fin')) {
-            $query->whereDate('created_at', '<=', $request->fecha_fin);
-        }
-
-        // Búsqueda de texto libre
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('action', 'LIKE', "%{$search}%")
-                  ->orWhere('ip_address', 'LIKE', "%{$search}%")
-                  ->orWhereHas('user', function ($q2) use ($search) {
-                      $q2->where('name', 'LIKE', "%{$search}%")
-                         ->orWhere('email', 'LIKE', "%{$search}%");
-                  });
-            });
-        }
-
-        $logs = $query->with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(25)
-            ->withQueryString();
-
-        // Datos para filtros
-        $acciones = AuditLog::where('tenant_id', $tenantId)
-            ->distinct()
-            ->pluck('action')
-            ->filter()
-            ->sort()
-            ->values();
-
-        // Usuarios disponibles para filtrar (solo admin ve todos)
-        $usuarios = collect();
-        if ($user->isAdminTenant()) {
-            $usuarios = User::where('tenant_id', $tenantId)
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
-        }
-
-        return view('admin.auditoria.index', [
-            'logs' => $logs,
-            'acciones' => $acciones,
-            'usuarios' => $usuarios,
-            'filters' => $request->only(['action', 'model_type', 'user_id', 'fecha_inicio', 'fecha_fin', 'search']),
-            'canFilterByUser' => $user->isAdminTenant(),
-        ]);
+        return view('admin.auditoria.index');
     }
 
     /**

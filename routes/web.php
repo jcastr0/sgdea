@@ -106,9 +106,9 @@ Route::middleware(['auth', 'verify.tenant'])->group(function () {
 
         // Rutas de auditoría
         Route::get('/auditoria', [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('auditoria.index');
-        Route::get('/auditoria/{id}', [\App\Http\Controllers\Admin\AuditController::class, 'show'])->name('auditoria.show');
         Route::get('/auditoria/export', [\App\Http\Controllers\Admin\AuditController::class, 'export'])->name('auditoria.export');
         Route::get('/auditoria-integridad', [\App\Http\Controllers\Admin\AuditController::class, 'verificarIntegridad'])->name('auditoria.integridad');
+        Route::get('/auditoria/{id}', [\App\Http\Controllers\Admin\AuditController::class, 'show'])->name('auditoria.show');
     });
 });
 
