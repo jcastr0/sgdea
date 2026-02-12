@@ -102,124 +102,96 @@
         </div>
     </div>
 
-    {{-- Barra de acciones y búsqueda --}}
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 mb-6">
-        <div class="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            {{-- Búsqueda principal --}}
-            <div class="flex-1 w-full sm:max-w-md">
-                <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                    <input type="text"
-                           wire:model.live.debounce.300ms="search"
-                           placeholder="Buscar por nombre o email..."
-                           class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
+    {{-- Barra de filtros usando el componente reutilizable --}}
+    <x-livewire.filter-bar
+        :showFilters="$showFilters"
+        :activeFiltersCount="$this->activeFiltersCount()"
+        :hasActiveFilters="$this->hasActiveFilters()"
+        searchPlaceholder="Buscar por nombre o email..."
+    >
+        {{-- Slot search: Input de búsqueda --}}
+        <x-slot:search>
+            <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="text"
+                       wire:model.live.debounce.300ms="search"
+                       placeholder="Buscar por nombre o email..."
+                       class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </x-slot:search>
+
+        {{-- Slot filters: Panel de filtros avanzados --}}
+        <x-slot:filters>
+            {{-- NIT --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">NIT</label>
+                <input type="text"
+                       wire:model.live.debounce.300ms="nit"
+                       placeholder="Buscar por NIT..."
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             </div>
 
-            {{-- Acciones --}}
-            <div class="flex items-center gap-3 w-full sm:w-auto">
-                {{-- Botón filtros --}}
-                <button wire:click="toggleFilters"
-                        class="cursor-pointer flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors {{ $showFilters ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : '' }}">
-                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                    </svg>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Filtros</span>
-                    @if($this->activeFiltersCount() > 0)
-                        <span class="px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full">
-                            {{ $this->activeFiltersCount() }}
-                        </span>
-                    @endif
-                </button>
-
-                {{-- Botón merge (solo si hay seleccionados) --}}
-                @if(is_array($selectedTerceros) && count($selectedTerceros) >= 2)
-                <button wire:click="openMergeModal"
-                        class="cursor-pointer flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                    </svg>
-                    <span class="text-sm font-medium">Fusionar ({{ count($selectedTerceros) }})</span>
-                </button>
-                @elseif(is_array($selectedTerceros) && count($selectedTerceros) == 1)
-                <span class="flex items-center gap-2 px-4 py-2.5 bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                    </svg>
-                    Selecciona 1 más para fusionar
-                </span>
-                @endif
-
-                {{-- Botón nuevo tercero --}}
-                <a href="{{ route('terceros.create') }}"
-                   class="cursor-pointer flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                    </svg>
-                    <span class="text-sm font-medium">Nuevo Tercero</span>
-                </a>
-            </div>
-        </div>
-
-        {{-- Panel de filtros avanzados --}}
-        @if($showFilters)
-        <div class="p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {{-- NIT --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">NIT</label>
-                    <input type="text"
-                           wire:model.live.debounce.300ms="nit"
-                           placeholder="Buscar por NIT..."
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                {{-- Estado --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-                    <select wire:model.live="estado"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="">Todos</option>
-                        <option value="activo">Activo</option>
-                        <option value="inactivo">Inactivo</option>
-                    </select>
-                </div>
-
-                {{-- Fecha desde --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Creado desde</label>
-                    <input type="date"
-                           wire:model.live="fechaDesde"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                {{-- Fecha hasta --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Creado hasta</label>
-                    <input type="date"
-                           wire:model.live="fechaHasta"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
+            {{-- Estado --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+                <select wire:model.live="estado"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos</option>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                </select>
             </div>
 
-            {{-- Botón limpiar filtros --}}
-            @if($this->hasActiveFilters())
-            <div class="mt-4 flex justify-end">
-                <button wire:click="clearFilters"
-                        class="cursor-pointer text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                    Limpiar filtros
-                </button>
+            {{-- Fecha desde --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Creado desde</label>
+                <input type="date"
+                       wire:model.live="fechaDesde"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             </div>
+
+            {{-- Fecha hasta --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Creado hasta</label>
+                <input type="date"
+                       wire:model.live="fechaHasta"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            </div>
+        </x-slot:filters>
+
+        {{-- Slot actions: Botones de acción --}}
+        <x-slot:actions>
+            {{-- Botón merge (solo si hay seleccionados) --}}
+            @if(is_array($selectedTerceros) && count($selectedTerceros) >= 2)
+            <button wire:click="openMergeModal"
+                    class="cursor-pointer flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+                <span class="text-sm font-medium">Fusionar ({{ count($selectedTerceros) }})</span>
+            </button>
+            @elseif(is_array($selectedTerceros) && count($selectedTerceros) == 1)
+            <span class="flex items-center gap-2 px-4 py-2.5 bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+                Selecciona 1 más para fusionar
+            </span>
             @endif
-        </div>
-        @endif
 
-        {{-- Indicador de selección --}}
+            {{-- Botón nuevo tercero --}}
+            <a href="{{ route('terceros.create') }}"
+               class="cursor-pointer flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                <span class="text-sm font-medium">Nuevo Tercero</span>
+            </a>
+        </x-slot:actions>
+
+        {{-- Indicador de selección (slot default) --}}
         @if(count($selectedTerceros) > 0)
         <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-200 dark:border-blue-800">
             <div class="flex items-center justify-between">
@@ -227,13 +199,13 @@
                     <strong>{{ count($selectedTerceros) }}</strong> tercero(s) seleccionado(s) para fusión
                 </span>
                 <button wire:click="cancelSelection"
-                        class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                        class="cursor-pointer text-sm text-blue-600 dark:text-blue-400 hover:underline">
                     Cancelar selección
                 </button>
             </div>
         </div>
         @endif
-    </div>
+    </x-livewire.filter-bar>
 
     {{-- Tabla de terceros --}}
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">

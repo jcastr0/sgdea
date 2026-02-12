@@ -9,8 +9,20 @@
 ]" />
 @endsection
 
+@php
+    // Calcular filtros activos
+    $activeFiltersCount = 0;
+    if (!empty($filters['search'])) $activeFiltersCount++;
+    if (!empty($filters['action'])) $activeFiltersCount++;
+    if (!empty($filters['user_id'])) $activeFiltersCount++;
+    if (!empty($filters['model_type'])) $activeFiltersCount++;
+    if (!empty($filters['fecha_inicio'])) $activeFiltersCount++;
+    if (!empty($filters['fecha_fin'])) $activeFiltersCount++;
+    $hasActiveFilters = $activeFiltersCount > 0;
+@endphp
+
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ showFilters: {{ $hasActiveFilters ? 'true' : 'false' }} }">
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -35,93 +47,189 @@
         </div>
     </div>
 
-    {{-- Filtros --}}
-    <x-card>
-        <form method="GET" action="{{ route('admin.auditoria.index') }}" class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {{-- Búsqueda --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Buscar</label>
-                    <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
-                           placeholder="Usuario, IP..."
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+    {{-- Estadísticas rápidas --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
                 </div>
-
-                {{-- Acción --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Acción</label>
-                    <select name="action"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Todas las acciones</option>
-                        @foreach($acciones as $accion)
-                            <option value="{{ $accion }}" {{ ($filters['action'] ?? '') === $accion ? 'selected' : '' }}>
-                                {{ ucfirst(str_replace('_', ' ', $accion)) }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Usuario (si tiene permisos) --}}
-                @if($canFilterByUser && $usuarios->isNotEmpty())
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usuario</label>
-                    <select name="user_id"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Todos los usuarios</option>
-                        @foreach($usuarios as $usuario)
-                            <option value="{{ $usuario->id }}" {{ ($filters['user_id'] ?? '') == $usuario->id ? 'selected' : '' }}>
-                                {{ $usuario->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                @endif
-
-                {{-- Tipo de modelo --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Entidad</label>
-                    <select name="model_type"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Todas las entidades</option>
-                        <option value="Factura" {{ ($filters['model_type'] ?? '') === 'Factura' ? 'selected' : '' }}>Factura</option>
-                        <option value="Tercero" {{ ($filters['model_type'] ?? '') === 'Tercero' ? 'selected' : '' }}>Tercero</option>
-                        <option value="User" {{ ($filters['model_type'] ?? '') === 'User' ? 'selected' : '' }}>Usuario</option>
-                    </select>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($logs->total()) }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total registros</p>
                 </div>
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {{-- Fecha inicio --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Desde</label>
-                    <input type="date" name="fecha_inicio" value="{{ $filters['fecha_inicio'] ?? '' }}"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
                 </div>
-
-                {{-- Fecha fin --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hasta</label>
-                    <input type="date" name="fecha_fin" value="{{ $filters['fecha_fin'] ?? '' }}"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ count($acciones) }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Tipos de acción</p>
                 </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m9 5.197v1"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $usuarios->count() }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Usuarios activos</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ $logs->first()?->created_at?->diffForHumans() ?? '-' }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Última acción</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                {{-- Botones --}}
-                <div class="flex items-end gap-2 lg:col-span-2">
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {{-- Barra de filtros con diseño consistente --}}
+    <form method="GET" action="{{ route('admin.auditoria.index') }}">
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 mb-6">
+            {{-- Barra principal --}}
+            <div class="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                {{-- Búsqueda principal --}}
+                <div class="flex-1 w-full sm:max-w-md">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
-                        Filtrar
+                        <input type="text"
+                               name="search"
+                               value="{{ $filters['search'] ?? '' }}"
+                               placeholder="Buscar por usuario, IP..."
+                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                {{-- Acciones --}}
+                <div class="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+                    {{-- Botón filtros --}}
+                    <button type="button"
+                            @click="showFilters = !showFilters"
+                            class="cursor-pointer flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                            :class="showFilters ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Filtros</span>
+                        @if($activeFiltersCount > 0)
+                            <span class="px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full">
+                                {{ $activeFiltersCount }}
+                            </span>
+                        @endif
                     </button>
-                    <a href="{{ route('admin.auditoria.index') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors cursor-pointer">
-                        Limpiar
-                    </a>
+
+                    {{-- Botón buscar --}}
+                    <button type="submit"
+                            class="cursor-pointer flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <span class="text-sm font-medium">Buscar</span>
+                    </button>
                 </div>
             </div>
-        </form>
-    </x-card>
+
+            {{-- Panel de filtros avanzados --}}
+            <div x-show="showFilters"
+                 x-collapse
+                 class="border-t border-gray-200 dark:border-slate-700">
+                <div class="p-4 bg-gray-50 dark:bg-slate-700/50">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {{-- Acción --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Acción</label>
+                            <select name="action"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todas las acciones</option>
+                                @foreach($acciones as $accion)
+                                    <option value="{{ $accion }}" {{ ($filters['action'] ?? '') === $accion ? 'selected' : '' }}>
+                                        {{ ucfirst(str_replace('_', ' ', $accion)) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Usuario (si tiene permisos) --}}
+                        @if($canFilterByUser && $usuarios->isNotEmpty())
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usuario</label>
+                            <select name="user_id"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos los usuarios</option>
+                                @foreach($usuarios as $usuario)
+                                    <option value="{{ $usuario->id }}" {{ ($filters['user_id'] ?? '') == $usuario->id ? 'selected' : '' }}>
+                                        {{ $usuario->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+
+                        {{-- Tipo de modelo --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Entidad</label>
+                            <select name="model_type"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todas las entidades</option>
+                                <option value="Factura" {{ ($filters['model_type'] ?? '') === 'Factura' ? 'selected' : '' }}>Factura</option>
+                                <option value="Tercero" {{ ($filters['model_type'] ?? '') === 'Tercero' ? 'selected' : '' }}>Tercero</option>
+                                <option value="User" {{ ($filters['model_type'] ?? '') === 'User' ? 'selected' : '' }}>Usuario</option>
+                            </select>
+                        </div>
+
+                        {{-- Fecha inicio --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Desde</label>
+                            <input type="date" name="fecha_inicio" value="{{ $filters['fecha_inicio'] ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        {{-- Fecha fin --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hasta</label>
+                            <input type="date" name="fecha_fin" value="{{ $filters['fecha_fin'] ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    {{-- Botón limpiar filtros --}}
+                    @if($hasActiveFilters)
+                    <div class="mt-4 flex justify-end">
+                        <a href="{{ route('admin.auditoria.index') }}"
+                           class="cursor-pointer text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Limpiar filtros
+                        </a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </form>
 
     {{-- Tabla de resultados --}}
     <x-card padding="none">

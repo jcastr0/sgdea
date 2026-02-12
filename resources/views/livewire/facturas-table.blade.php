@@ -1,4 +1,15 @@
 <div class="space-y-6">
+    {{-- Loading Overlay --}}
+    <div wire:loading.flex class="fixed inset-0 z-50 items-center justify-center bg-black/20 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-xl flex items-center gap-4">
+            <svg class="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-gray-700 dark:text-gray-300 font-medium">Cargando...</span>
+        </div>
+    </div>
+
     {{-- Estadísticas --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {{-- Total Facturas --}}
@@ -59,9 +70,9 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         @foreach($estadisticas['por_estado'] as $estado => $count)
                             <span class="text-xs px-2 py-1 rounded-full
-                                {{ $estado === 'pagada' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : '' }}
+                                {{ $estado === 'aceptado' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : '' }}
                                 {{ $estado === 'pendiente' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : '' }}
-                                {{ $estado === 'cancelada' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : '' }}">
+                                {{ $estado === 'rechazado' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : '' }}">
                                 {{ ucfirst($estado) }}: {{ $count }}
                             </span>
                         @endforeach
@@ -72,62 +83,35 @@
         </x-card>
     </div>
 
-    {{-- Barra de búsqueda rápida y acciones --}}
-    <div class="flex flex-col sm:flex-row gap-4">
-        {{-- Búsqueda rápida --}}
-        <div class="flex-1">
-            <x-search-filter
-                wire:model.live.debounce.300ms="search"
-                placeholder="Buscar por número, CUFE, cliente..."
-                size="md"
-            />
-        </div>
-
-        {{-- Acciones --}}
-        <div class="flex items-center gap-2">
-            <x-button
-                variant="outline"
-                size="md"
-                wire:click="toggleFilters"
-                class="relative"
-            >
-                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+    {{-- Barra de filtros usando el componente reutilizable --}}
+    <x-livewire.filter-bar
+        :showFilters="$showFilters"
+        :activeFiltersCount="$this->activeFiltersCount()"
+        :hasActiveFilters="$this->hasActiveFilters()"
+        searchPlaceholder="Buscar por número, CUFE, cliente..."
+    >
+        {{-- Slot search: Input de búsqueda --}}
+        <x-slot:search>
+            <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                Filtros
-                @if($this->activeFiltersCount() > 0)
-                    <span class="absolute -top-2 -right-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
-                        {{ $this->activeFiltersCount() }}
-                    </span>
-                @endif
-            </x-button>
+                <input type="text"
+                       wire:model.live.debounce.300ms="search"
+                       placeholder="Buscar por número, CUFE, cliente..."
+                       class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </x-slot:search>
 
-            {{-- Botón Nueva Factura deshabilitado - Las facturas se crean desde importación
-            <x-button
-                variant="primary"
-                size="md"
-                href="{{ route('facturas.create') }}"
-            >
-                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Nueva Factura
-            </x-button>
-            --}}
-        </div>
-    </div>
-
-    {{-- Panel de Filtros Avanzados --}}
-    @if($showFilters)
-    <x-card class="animate-fade-in">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {{-- Slot filters: Panel de filtros avanzados --}}
+        <x-slot:filters>
             {{-- Número de Factura --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nº Factura</label>
                 <input type="text"
                        wire:model.live.debounce.300ms="numeroFactura"
                        placeholder="Ej: FAC-001"
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             </div>
 
             {{-- CUFE --}}
@@ -136,14 +120,14 @@
                 <input type="text"
                        wire:model.live.debounce.300ms="cufe"
                        placeholder="Código CUFE..."
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             </div>
 
             {{-- Tercero/Cliente --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
                 <select wire:model.live="terceroId"
-                        class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     <option value="">Todos los clientes</option>
                     @foreach($terceros as $tercero)
                         <option value="{{ $tercero->id }}">{{ $tercero->nombre_razon_social }}</option>
@@ -155,11 +139,11 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
                 <select wire:model.live="estado"
-                        class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     <option value="">Todos los estados</option>
+                    <option value="aceptado">✓ Aceptado</option>
                     <option value="pendiente">⏳ Pendiente</option>
-                    <option value="pagada">✓ Pagada</option>
-                    <option value="cancelada">✗ Cancelada</option>
+                    <option value="rechazado">✗ Rechazado</option>
                 </select>
             </div>
 
@@ -168,7 +152,7 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Desde</label>
                 <input type="date"
                        wire:model.live="fechaDesde"
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             </div>
 
             {{-- Fecha Hasta --}}
@@ -176,34 +160,14 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Hasta</label>
                 <input type="date"
                        wire:model.live="fechaHasta"
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
-            </div>
-
-            {{-- Monto Mínimo --}}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto Mínimo</label>
-                <input type="number"
-                       wire:model.live.debounce.300ms="totalMin"
-                       placeholder="0.00"
-                       step="0.01"
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
-            </div>
-
-            {{-- Monto Máximo --}}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto Máximo</label>
-                <input type="number"
-                       wire:model.live.debounce.300ms="totalMax"
-                       placeholder="999999.99"
-                       step="0.01"
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             </div>
 
             {{-- Tiene PDF --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Documentación</label>
                 <select wire:model.live="tienePdf"
-                        class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     <option value="">Cualquiera</option>
                     <option value="1">📄 Con PDF</option>
                     <option value="0">⚠️ Sin PDF</option>
@@ -216,39 +180,15 @@
                 <input type="text"
                        wire:model.live.debounce.300ms="motonave"
                        placeholder="Nombre motonave..."
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             </div>
+        </x-slot:filters>
 
-            {{-- TRB --}}
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">TRB</label>
-                <input type="text"
-                       wire:model.live.debounce.300ms="trb"
-                       placeholder="TRB..."
-                       class="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
-            </div>
-        </div>
-
-        {{-- Acciones de filtros --}}
-        <div class="flex justify-end mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
-            <x-button variant="ghost" size="sm" wire:click="clearFilters">
-                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Limpiar Filtros
-            </x-button>
-        </div>
-    </x-card>
-    @endif
-
-    {{-- Indicador de carga --}}
-    <div wire:loading.delay class="flex items-center justify-center py-4">
-        <svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Cargando...</span>
-    </div>
+        {{-- Slot actions: vacío por ahora, no hay acciones especiales --}}
+        <x-slot:actions>
+            {{-- Las facturas se crean desde importación, no hay botón de crear --}}
+        </x-slot:actions>
+    </x-livewire.filter-bar>
 
     {{-- Tabla Desktop --}}
     <div class="hidden lg:block" wire:loading.class="opacity-50">
