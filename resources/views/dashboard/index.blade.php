@@ -47,12 +47,14 @@
                         x-transition:enter-start="transform opacity-0 scale-95"
                         x-transition:enter-end="transform opacity-100 scale-100"
                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 py-1 z-50">
+                        <button @click="setPeriodo('todo'); open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 font-medium">📊 Todo</button>
+                        <hr class="my-1 border-gray-200 dark:border-slate-700">
                         <button @click="setPeriodo('hoy'); open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Hoy</button>
                         <button @click="setPeriodo('semana'); open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Esta semana</button>
                         <button @click="setPeriodo('mes'); open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Este mes</button>
                         <button @click="setPeriodo('year'); open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Este año</button>
                         <hr class="my-1 border-gray-200 dark:border-slate-700">
-                        <button @click="setPeriodo('custom'); open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Personalizado...</button>
+                        <button @click="showCustomDates = true; open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">📅 Personalizado...</button>
                     </div>
                 </div>
 
@@ -437,6 +439,49 @@
         </div>
     </div>
 
+    {{-- Modal Fechas Personalizadas --}}
+    <div x-show="showCustomDates"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-gray-900/50 dark:bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-50"
+         @click.self="showCustomDates = false">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl w-full max-w-md mx-4"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="transform scale-95 opacity-0"
+             x-transition:enter-end="transform scale-100 opacity-100">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Seleccionar período personalizado</h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha inicio</label>
+                    <input type="date" x-model="customFechaInicio"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha fin</label>
+                    <input type="date" x-model="customFechaFin"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button @click="showCustomDates = false"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    Cancelar
+                </button>
+                <button @click="applyCustomDates()"
+                        :disabled="!customFechaInicio || !customFechaFin"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Aplicar
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- Estado de carga --}}
     <div x-show="loading" class="fixed inset-0 bg-gray-900/20 dark:bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl flex items-center gap-4">
@@ -470,24 +515,31 @@ function dashboardData() {
             distribucion_estados: { labels: [], data: [] },
             facturas_mes: { labels: [], data: [] },
         },
-        periodoLabel: 'Este año',
+        periodoLabel: 'Todo',
         fechaInicio: null,
         fechaFin: null,
+        showCustomDates: false,
+        customFechaInicio: null,
+        customFechaFin: null,
         chartEvolucion: null,
         chartEstados: null,
         chartTendencia: null,
 
         init() {
-            // Establecer período por defecto (este año)
-            const now = new Date();
-            this.fechaInicio = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-            this.fechaFin = now.toISOString().split('T')[0];
+            // Por defecto cargar todo (sin filtro de fechas)
+            this.fechaInicio = '';
+            this.fechaFin = '';
             this.loadData();
         },
 
         setPeriodo(tipo) {
             const now = new Date();
             switch(tipo) {
+                case 'todo':
+                    this.fechaInicio = '';
+                    this.fechaFin = '';
+                    this.periodoLabel = 'Todo';
+                    break;
                 case 'hoy':
                     this.fechaInicio = now.toISOString().split('T')[0];
                     this.fechaFin = now.toISOString().split('T')[0];
@@ -510,20 +562,26 @@ function dashboardData() {
                     this.fechaFin = now.toISOString().split('T')[0];
                     this.periodoLabel = 'Este año';
                     break;
-                case 'custom':
-                    // Aquí podrías abrir un modal con date pickers
-                    return;
             }
             this.loadData();
+        },
+
+        applyCustomDates() {
+            if (this.customFechaInicio && this.customFechaFin) {
+                this.fechaInicio = this.customFechaInicio;
+                this.fechaFin = this.customFechaFin;
+                this.periodoLabel = 'Personalizado';
+                this.showCustomDates = false;
+                this.loadData();
+            }
         },
 
         async loadData() {
             this.loading = true;
             try {
-                const params = new URLSearchParams({
-                    fecha_inicio: this.fechaInicio,
-                    fecha_fin: this.fechaFin
-                });
+                const params = new URLSearchParams();
+                if (this.fechaInicio) params.append('fecha_inicio', this.fechaInicio);
+                if (this.fechaFin) params.append('fecha_fin', this.fechaFin);
 
                 const response = await fetch(`{{ route('dashboard.data') }}?${params}`);
                 const data = await response.json();
@@ -531,6 +589,10 @@ function dashboardData() {
                 if (data.success) {
                     this.kpis = data.kpis;
                     this.graficos = data.graficos;
+                    // Actualizar label con período real si viene del servidor
+                    if (data.periodo && this.periodoLabel === 'Todo') {
+                        this.periodoLabel = `Todo (${data.periodo.inicio} - ${data.periodo.fin})`;
+                    }
                     this.updateCharts();
                 }
             } catch (error) {

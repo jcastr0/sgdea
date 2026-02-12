@@ -302,7 +302,7 @@ class ImportWizard extends Component
             'duplicateCount',
             'errorCount',
             'currentRecord',
-            'errors',
+            'importErrors',
             'processingLog',
             'importLogId',
             'summary',

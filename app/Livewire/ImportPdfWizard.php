@@ -80,21 +80,31 @@ class ImportPdfWizard extends Component
 
     /**
      * Cuando se suben archivos - guardar inmediatamente
+     * Livewire puede disparar esto múltiples veces para archivos múltiples
      */
     public function updatedPdfFiles()
     {
-        $this->uploadedFiles = [];
-        $this->storedPaths = [];
-        $this->totalFilesSize = 0;
-
-        if (!$this->pdfFiles || !is_array($this->pdfFiles)) {
-            Log::warning("pdfFiles está vacío o no es array", ['pdfFiles' => $this->pdfFiles]);
+        if (!$this->pdfFiles) {
+            Log::warning("pdfFiles está vacío");
             return;
         }
 
-        Log::info("Procesando archivos PDF", ['count' => count($this->pdfFiles)]);
+        // Convertir a array si es un solo archivo
+        $files = is_array($this->pdfFiles) ? $this->pdfFiles : [$this->pdfFiles];
 
-        foreach ($this->pdfFiles as $index => $file) {
+        Log::info("updatedPdfFiles disparado", ['count' => count($files)]);
+
+        // Limpiar archivos anteriores si existen (nueva selección reemplaza la anterior)
+        if (count($this->storedPaths) > 0) {
+            foreach ($this->storedPaths as $path) {
+                Storage::disk('local')->delete($path);
+            }
+            $this->uploadedFiles = [];
+            $this->storedPaths = [];
+            $this->totalFilesSize = 0;
+        }
+
+        foreach ($files as $index => $file) {
             try {
                 // Verificar que el archivo sea válido
                 if (!$file || !method_exists($file, 'store')) {
@@ -102,45 +112,64 @@ class ImportPdfWizard extends Component
                     continue;
                 }
 
+                // Obtener info ANTES de guardar (el objeto puede expirar después)
                 $fileName = $file->getClientOriginalName();
-                $fileSize = $file->getSize();
 
-                // Guardar archivo inmediatamente para evitar que expire
+                // Intentar obtener el tamaño de forma segura
+                try {
+                    $fileSize = $file->getSize();
+                } catch (\Exception $e) {
+                    Log::warning("No se pudo obtener tamaño del archivo {$index}, usando 0");
+                    $fileSize = 0;
+                }
+
+                // Guardar archivo inmediatamente
                 $storedPath = $file->store('imports/temp-pdf', 'local');
+
+                if (!$storedPath) {
+                    Log::error("store() retornó null para archivo {$index}");
+                    continue;
+                }
+
                 $fullPath = Storage::disk('local')->path($storedPath);
 
-                Log::info("PDF guardado", [
+                // Verificar que realmente existe
+                if (!file_exists($fullPath)) {
+                    Log::error("Archivo no existe después de store()", ['path' => $fullPath]);
+                    continue;
+                }
+
+                // Obtener tamaño real del archivo guardado
+                $realSize = filesize($fullPath);
+
+                Log::info("PDF guardado exitosamente", [
                     'index' => $index,
                     'name' => $fileName,
                     'storedPath' => $storedPath,
-                    'exists' => file_exists($fullPath),
-                    'size' => file_exists($fullPath) ? filesize($fullPath) : 0,
+                    'size' => $realSize,
                 ]);
 
-                if (file_exists($fullPath)) {
-                    $this->uploadedFiles[] = [
-                        'name' => $fileName,
-                        'size' => $fileSize,
-                        'stored_path' => $storedPath,
-                    ];
-                    $this->storedPaths[] = $storedPath;
-                    $this->totalFilesSize += $fileSize;
-                }
+                $this->uploadedFiles[] = [
+                    'name' => $fileName,
+                    'size' => $realSize,
+                    'stored_path' => $storedPath,
+                ];
+                $this->storedPaths[] = $storedPath;
+                $this->totalFilesSize += $realSize;
+
             } catch (\Exception $e) {
-                Log::error("Error guardando PDF", [
-                    'index' => $index,
+                Log::error("Error guardando PDF #{$index}", [
                     'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                 ]);
-                // NO agregar error aquí para no interrumpir los demás archivos
             }
         }
 
         $this->totalFiles = count($this->uploadedFiles);
 
-        Log::info("Archivos procesados", [
+        Log::info("Resumen de archivos procesados", [
             'totalFiles' => $this->totalFiles,
-            'uploadedFiles' => count($this->uploadedFiles),
-            'storedPaths' => count($this->storedPaths),
+            'totalSize' => $this->totalFilesSize,
         ]);
 
         // Si no se guardó ningún archivo, mostrar error

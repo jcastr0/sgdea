@@ -47,8 +47,26 @@ class DashboardController extends Controller
         $tenantId = session('tenant_id');
 
         $terceroId = $request->get('tercero_id');
-        $fechaInicio = $request->get('fecha_inicio', Carbon::now()->startOfYear()->format('Y-m-d'));
-        $fechaFin = $request->get('fecha_fin', Carbon::now()->format('Y-m-d'));
+
+        // Si no se especifican fechas, usar el rango de facturas existentes o el año actual
+        $fechaInicio = $request->get('fecha_inicio');
+        $fechaFin = $request->get('fecha_fin');
+
+        if (!$fechaInicio || !$fechaFin) {
+            // Detectar rango de fechas de las facturas del tenant
+            $rangoFechas = Factura::where('tenant_id', $tenantId)
+                ->selectRaw('MIN(fecha_factura) as min_fecha, MAX(fecha_factura) as max_fecha')
+                ->first();
+
+            if ($rangoFechas && $rangoFechas->min_fecha) {
+                $fechaInicio = $fechaInicio ?: Carbon::parse($rangoFechas->min_fecha)->startOfYear()->format('Y-m-d');
+                $fechaFin = $fechaFin ?: Carbon::parse($rangoFechas->max_fecha)->endOfYear()->format('Y-m-d');
+            } else {
+                // Sin facturas, usar año actual
+                $fechaInicio = $fechaInicio ?: Carbon::now()->startOfYear()->format('Y-m-d');
+                $fechaFin = $fechaFin ?: Carbon::now()->format('Y-m-d');
+            }
+        }
 
         // Validar que tercero pertenezca al tenant
         if ($terceroId) {
