@@ -20,7 +20,7 @@ class FacturaController extends Controller
     public function index(Request $request)
     {
         // La nueva vista usa Livewire para manejar filtros y paginación
-        return view('facturas.index-new');
+        return view('facturas.index');
     }
 
     /**
@@ -34,14 +34,14 @@ class FacturaController extends Controller
         $factura->load('tercero');
 
         // Obtener historial de cambios de la factura
-        $historial = AuditLog::where('entity_type', 'factura')
-            ->where('entity_id', $factura->id)
+        $historial = AuditLog::where('model_type', Factura::class)
+            ->where('model_id', $factura->id)
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get();
 
-        return view('facturas.show-new', [
+        return view('facturas.show', [
             'factura' => $factura,
             'historial' => $historial,
         ]);

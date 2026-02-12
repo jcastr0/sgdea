@@ -16,8 +16,8 @@ class TerceroController extends Controller
      */
     public function index(Request $request)
     {
-        // Usar la nueva vista con Livewire
-        return view('terceros.index-new');
+        // Usar vista con Livewire
+        return view('terceros.index');
     }
 
     /**
@@ -46,6 +46,14 @@ class TerceroController extends Controller
             ->limit(5)
             ->get();
 
+        // Historial de auditoría del tercero
+        $historial = AuditLog::where('model_type', Tercero::class)
+            ->where('model_id', $tercero->id)
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
         return view('terceros.show', [
             'tercero' => $tercero,
             'stats' => [
@@ -54,6 +62,7 @@ class TerceroController extends Controller
                 'ultima_factura' => $stats->ultima_factura,
             ],
             'ultimasFacturas' => $ultimasFacturas,
+            'historial' => $historial,
         ]);
     }
 
@@ -62,7 +71,7 @@ class TerceroController extends Controller
      */
     public function create()
     {
-        return view('terceros.create-new');
+        return view('terceros.create');
     }
 
     /**
@@ -130,7 +139,7 @@ class TerceroController extends Controller
     {
         $this->autorizarTenant($tercero);
 
-        return view('terceros.edit-new', ['tercero' => $tercero]);
+        return view('terceros.edit', ['tercero' => $tercero]);
     }
 
     /**

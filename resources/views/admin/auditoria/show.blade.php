@@ -1,503 +1,238 @@
-@extends('layouts.app')
+@extends('layouts.sgdea')
+
+@section('title', 'Detalle de Auditoría')
+
+@section('breadcrumbs')
+<x-breadcrumb :items="[
+    ['label' => 'Dashboard', 'route' => 'dashboard'],
+    ['label' => 'Auditoría', 'route' => 'admin.auditoria.index'],
+    ['label' => 'Detalle #' . $log->id, 'active' => true],
+]" />
+@endsection
 
 @section('content')
-<div class="auditoria-detalles-layout">
-    <div class="header-section">
+<div class="max-w-5xl mx-auto space-y-6">
+    {{-- Header --}}
+    <div class="flex items-center justify-between">
         <div>
-            <h1>Auditoría Completa</h1>
-            <p>{{ ucfirst($log->entity_type) }} #{{ $log->entity_id }} - Historial y Verificación</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Registro de Auditoría #{{ $log->id }}</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">{{ $log->created_at->format('d/m/Y H:i:s') }}</p>
         </div>
-        <a href="{{ route('admin.auditoria.index') }}" class="btn btn-outline">← Volver</a>
+        <a href="{{ route('admin.auditoria.index') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Volver
+        </a>
     </div>
 
-    {{-- Layout de 2 columnas: PDF + Auditoría --}}
-    <div class="audit-layout">
-        {{-- Columna 1: Visor de PDF --}}
-        <div class="pdf-column">
-            <div class="pdf-container">
-                @if($pdfPath)
-                    <div class="pdf-viewer">
-                        <iframe src="{{ $pdfPath }}" class="pdf-iframe" type="application/pdf"></iframe>
+    {{-- Grid principal --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {{-- Columna principal --}}
+        <div class="lg:col-span-2 space-y-6">
+            {{-- Información del Evento --}}
+            <x-card title="Información del Evento">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Acción</label>
+                        @php
+                            $actionColors = [
+                                'login' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+                                'logout' => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+                                'login_failed' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                                'create' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                                'created' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                                'update' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                                'updated' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                                'delete' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                                'deleted' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                            ];
+                            $actionColor = $actionColors[strtolower($log->action)] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+                        @endphp
+                        <p class="mt-1">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ $actionColor }}">
+                                {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                            </span>
+                        </p>
                     </div>
-                @else
-                    <div class="sin-pdf">
-                        <div class="sin-pdf-icon">📄</div>
-                        <p>No hay PDF asociado a este registro</p>
-                        <small>{{ ucfirst($log->entity_type) }} #{{ $log->entity_id }}</small>
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Fecha y Hora</label>
+                        <p class="font-medium text-gray-900 dark:text-white mt-1">
+                            {{ $log->created_at->format('d/m/Y H:i:s') }}
+                            <span class="text-sm text-gray-500 dark:text-gray-400">({{ $log->created_at->diffForHumans() }})</span>
+                        </p>
                     </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- Columna 2: Auditoría Completa --}}
-        <div class="audit-column">
-            {{-- Alerta de Integridad --}}
-            <div class="alerta-integridad {{ $integro ? 'alerta-exito' : 'alerta-peligro' }}">
-                <strong>{{ $integro ? '✓ Integridad Verificada' : '⚠️ ADVERTENCIA DE INTEGRIDAD' }}</strong>
-                <p>{{ $integro ? 'Este registro no ha sido alterado desde su creación.' : 'El hash NO coincide. Posible alteración detectada.' }}</p>
-            </div>
-
-            {{-- Evento Actual --}}
-            <div class="event-card current">
-                <div class="event-header">
-                    <span class="event-badge badge-{{ $log->action }}">{{ ucfirst($log->action) }}</span>
-                    <span class="event-time">{{ $log->created_at->format('d/m/Y H:i:s') }}</span>
-                </div>
-                <div class="event-user">
-                    @if($log->user)
-                        <strong>{{ $log->user->name }}</strong><br>
-                        <small>{{ $log->user->email }}</small>
-                    @else
-                        <strong>Sistema</strong>
-                    @endif
-                </div>
-                <div class="event-description">{{ $log->description }}</div>
-                <div class="event-ip">
-                    <code>{{ $log->ip_address }}</code>
-                </div>
-
-                {{-- Cambios en este evento --}}
-                @if($log->old_values || $log->new_values)
-                <div class="event-changes">
-                    @if($log->old_values)
-                    <div class="change-item">
-                        <strong>Antes:</strong>
-                        <pre class="json-mini">{{ json_encode(json_decode($log->old_values), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-                    </div>
-                    @endif
-                    @if($log->new_values)
-                    <div class="change-item">
-                        <strong>Después:</strong>
-                        <pre class="json-mini">{{ json_encode(json_decode($log->new_values), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-                    </div>
-                    @endif
-                </div>
-                @endif
-
-                {{-- Hash de integridad --}}
-                <div class="event-hash">
-                    <strong>Hash SHA-256:</strong>
-                    <code class="hash-code">{{ $log->hash }}</code>
-                </div>
-            </div>
-
-            {{-- Historial Completo de la Entidad --}}
-            <div class="audit-history">
-                <h3>📜 Historial Completo</h3>
-                <p class="history-subtitle">{{ ucfirst($log->entity_type) }} #{{ $log->entity_id }}</p>
-
-                <div class="timeline">
-                    @foreach($auditCompleta as $evento)
-                    <div class="timeline-item {{ $evento->id === $log->id ? 'current-event' : '' }}">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-content">
-                            <div class="timeline-header">
-                                <span class="timeline-action badge badge-{{ $evento->action }}">{{ ucfirst($evento->action) }}</span>
-                                <span class="timeline-time">{{ $evento->created_at->format('d/m/Y H:i:s') }}</span>
-                                @if($evento->id === $log->id)
-                                <span class="timeline-current">ACTUAL</span>
-                                @endif
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Usuario</label>
+                        <div class="flex items-center gap-2 mt-1">
+                            <div class="w-8 h-8 bg-gray-200 dark:bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+                                {{ $log->user ? strtoupper(substr($log->user->name, 0, 2)) : 'SY' }}
                             </div>
-                            <div class="timeline-user">
-                                @if($evento->user)
-                                    {{ $evento->user->name }}
-                                @else
-                                    Sistema
-                                @endif
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $log->user?->name ?? 'Sistema' }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $log->user?->email ?? 'system@sgdea.local' }}</p>
                             </div>
-                            <div class="timeline-ip">{{ $evento->ip_address ?? 'N/A' }}</div>
                         </div>
                     </div>
+                    @if($log->model_type)
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Modelo Afectado</label>
+                        <p class="font-medium text-gray-900 dark:text-white mt-1">
+                            {{ class_basename($log->model_type) }}
+                            @if($log->model_id)
+                                <span class="text-gray-500 dark:text-gray-400">#{{ $log->model_id }}</span>
+                            @endif
+                        </p>
+                    </div>
+                    @endif
+                </div>
+            </x-card>
+
+            {{-- Valores anteriores --}}
+            @if($log->old_values)
+            <x-card title="Valores Anteriores">
+                <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 overflow-x-auto">
+                    <pre class="text-sm text-red-800 dark:text-red-300 font-mono whitespace-pre-wrap">{{ json_encode($log->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                </div>
+            </x-card>
+            @endif
+
+            {{-- Valores nuevos --}}
+            @if($log->new_values)
+            <x-card title="Valores Nuevos">
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 overflow-x-auto">
+                    <pre class="text-sm text-green-800 dark:text-green-300 font-mono whitespace-pre-wrap">{{ json_encode($log->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                </div>
+            </x-card>
+            @endif
+
+            {{-- Contexto adicional --}}
+            @if($log->context)
+            <x-card title="Contexto Adicional">
+                <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 overflow-x-auto">
+                    <pre class="text-sm text-gray-800 dark:text-gray-300 font-mono whitespace-pre-wrap">{{ json_encode($log->context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                </div>
+            </x-card>
+            @endif
+
+            {{-- Historial completo del modelo --}}
+            @if($auditCompleta->count() > 1)
+            <x-card title="Historial Completo del Registro">
+                <x-slot:headerActions>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ $auditCompleta->count() }} eventos</span>
+                </x-slot:headerActions>
+
+                <div class="space-y-3">
+                    @foreach($auditCompleta as $item)
+                        @php
+                            $itemColor = $actionColors[strtolower($item->action)] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+                            $isCurrent = $item->id === $log->id;
+                        @endphp
+                        <div class="flex items-start gap-3 p-3 rounded-lg {{ $isCurrent ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' : 'bg-gray-50 dark:bg-slate-700/50' }}">
+                            <div class="flex-shrink-0 mt-0.5">
+                                <div class="w-3 h-3 rounded-full {{ $isCurrent ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600' }}"></div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $itemColor }}">
+                                        {{ ucfirst(str_replace('_', ' ', $item->action)) }}
+                                    </span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $item->created_at->format('d/m/Y H:i:s') }}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                    {{ $item->user?->name ?? 'Sistema' }}
+                                </p>
+                            </div>
+                            @if(!$isCurrent)
+                            <a href="{{ route('admin.auditoria.show', $item->id) }}"
+                               class="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                                Ver
+                            </a>
+                            @endif
+                        </div>
                     @endforeach
                 </div>
-            </div>
+            </x-card>
+            @endif
+        </div>
+
+        {{-- Columna lateral --}}
+        <div class="space-y-6">
+            {{-- Información técnica --}}
+            <x-card title="Información de la Solicitud">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Dirección IP</label>
+                        <p class="font-medium text-gray-900 dark:text-white font-mono">{{ $log->ip_address ?? 'No registrada' }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Método HTTP</label>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $log->method ?? 'N/A' }}</p>
+                    </div>
+                    @if($log->url)
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">URL</label>
+                        <p class="font-medium text-gray-600 dark:text-gray-400 text-xs font-mono break-all">{{ $log->url }}</p>
+                    </div>
+                    @endif
+                    @if($log->user_agent)
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">User Agent</label>
+                        <p class="font-medium text-gray-600 dark:text-gray-400 text-xs break-all">{{ $log->user_agent }}</p>
+                    </div>
+                    @endif
+                </div>
+            </x-card>
+
+            {{-- Visor de PDF (si aplica) --}}
+            @if($pdfPath)
+            <x-card title="Documento Asociado">
+                <div class="aspect-[3/4] bg-gray-100 dark:bg-slate-700 rounded-lg overflow-hidden">
+                    <iframe src="{{ $pdfPath }}" class="w-full h-full" type="application/pdf"></iframe>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ $pdfPath }}" target="_blank"
+                       class="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        Abrir en nueva ventana
+                    </a>
+                </div>
+            </x-card>
+            @endif
+
+            {{-- Ir al registro --}}
+            @if($entidad)
+            <x-card title="Registro Relacionado">
+                <div class="text-center py-4">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                        {{ class_basename($log->model_type) }} #{{ $log->model_id }}
+                    </p>
+                    @if($log->model_type === \App\Models\Factura::class)
+                        <a href="{{ route('facturas.show', $log->model_id) }}"
+                           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                            Ver Factura
+                        </a>
+                    @elseif($log->model_type === \App\Models\Tercero::class)
+                        <a href="{{ route('terceros.show', $log->model_id) }}"
+                           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                            Ver Tercero
+                        </a>
+                    @endif
+                </div>
+            </x-card>
+            @endif
         </div>
     </div>
 </div>
-
-<style>
-.auditoria-detalles-layout {
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.header-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    border-bottom: 2px solid #D4D9E2;
-    padding-bottom: 20px;
-}
-
-.header-section h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1F2933;
-    margin: 0;
-}
-
-.header-section p {
-    color: #6B7280;
-    margin: 5px 0 0 0;
-}
-
-.audit-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-@media (max-width: 1200px) {
-    .audit-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-{{-- COLUMNA 1: PDF --}}
-.pdf-column {
-    position: sticky;
-    top: 20px;
-    height: fit-content;
-}
-
-.pdf-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-
-.pdf-viewer {
-    width: 100%;
-    height: 600px;
-    background: #F5F7FA;
-}
-
-.pdf-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-.sin-pdf {
-    padding: 60px 20px;
-    text-align: center;
-    background: #F5F7FA;
-}
-
-.sin-pdf-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-}
-
-.sin-pdf p {
-    color: #6B7280;
-    margin: 10px 0;
-}
-
-.sin-pdf small {
-    color: #9CA3AF;
-}
-
-{{-- COLUMNA 2: AUDITORÍA --}}
-.audit-column {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.alerta-integridad {
-    padding: 15px;
-    border-radius: 8px;
-    border-left: 4px solid;
-}
-
-.alerta-integridad strong {
-    display: block;
-    margin-bottom: 3px;
-    font-size: 14px;
-}
-
-.alerta-integridad p {
-    margin: 0;
-    font-size: 13px;
-}
-
-.alerta-exito {
-    background: #E6F5EC;
-    color: #009F6B;
-    border-left-color: #28A745;
-}
-
-.alerta-peligro {
-    background: #F8D7DA;
-    color: #DC3545;
-    border-left-color: #DC3545;
-}
-
-{{-- EVENTO ACTUAL --}}
-.event-card {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border-left: 4px solid #2767C6;
-}
-
-.event-card.current {
-    background: linear-gradient(135deg, #F0F4FF 0%, #FFFFFF 100%);
-}
-
-.event-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    gap: 10px;
-}
-
-.event-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.badge-create {
-    background: #E6F5EC;
-    color: #009F6B;
-}
-
-.badge-update {
-    background: #FFF3CD;
-    color: #856404;
-}
-
-.badge-delete {
-    background: #F8D7DA;
-    color: #DC3545;
-}
-
-.event-time {
-    font-size: 13px;
-    color: #6B7280;
-}
-
-.event-user {
-    margin-bottom: 10px;
-    font-size: 13px;
-}
-
-.event-user strong {
-    color: #1F2933;
-}
-
-.event-user small {
-    color: #6B7280;
-}
-
-.event-description {
-    margin-bottom: 10px;
-    font-size: 13px;
-    color: #1F2933;
-}
-
-.event-ip {
-    margin-bottom: 15px;
-}
-
-.event-ip code {
-    background: #F5F7FA;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    color: #2767C6;
-}
-
-.event-changes {
-    border-top: 1px solid #D4D9E2;
-    padding-top: 15px;
-    margin-bottom: 15px;
-}
-
-.change-item {
-    margin-bottom: 10px;
-}
-
-.change-item strong {
-    display: block;
-    font-size: 12px;
-    color: #1F2933;
-    margin-bottom: 5px;
-}
-
-.json-mini {
-    background: #F5F7FA;
-    border: 1px solid #D4D9E2;
-    border-radius: 4px;
-    padding: 8px;
-    margin: 0;
-    font-size: 11px;
-    line-height: 1.4;
-    max-height: 150px;
-    overflow: auto;
-}
-
-.event-hash {
-    border-top: 1px solid #D4D9E2;
-    padding-top: 15px;
-}
-
-.event-hash strong {
-    display: block;
-    font-size: 12px;
-    margin-bottom: 5px;
-}
-
-.hash-code {
-    background: #F5F7FA;
-    padding: 4px 8px;
-    border-radius: 4px;
-    display: block;
-    word-break: break-all;
-    font-size: 10px;
-    color: #2767C6;
-}
-
-{{-- HISTORIAL --}}
-.audit-history {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.audit-history h3 {
-    margin: 0 0 5px 0;
-    font-size: 14px;
-    font-weight: 700;
-    color: #1F2933;
-}
-
-.history-subtitle {
-    margin: 0 0 20px 0;
-    font-size: 12px;
-    color: #6B7280;
-}
-
-.timeline {
-    position: relative;
-    padding-left: 30px;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 5px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #D4D9E2;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 15px;
-}
-
-.timeline-item.current-event {
-    background: #F0F4FF;
-    padding: 10px;
-    border-radius: 4px;
-    margin-left: -10px;
-    padding-left: 20px;
-}
-
-.timeline-dot {
-    position: absolute;
-    left: -27px;
-    top: 3px;
-    width: 12px;
-    height: 12px;
-    background: white;
-    border: 2px solid #2767C6;
-    border-radius: 50%;
-}
-
-.timeline-item.current-event .timeline-dot {
-    background: #2767C6;
-    width: 14px;
-    height: 14px;
-    left: -28px;
-    top: 1px;
-}
-
-.timeline-content {
-    font-size: 12px;
-}
-
-.timeline-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 3px;
-}
-
-.timeline-action {
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 10px;
-}
-
-.timeline-time {
-    color: #6B7280;
-    font-size: 11px;
-}
-
-.timeline-current {
-    background: #2767C6;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 9px;
-    font-weight: 600;
-    margin-left: auto;
-}
-
-.timeline-user {
-    color: #1F2933;
-    font-weight: 500;
-}
-
-.timeline-ip {
-    color: #9CA3AF;
-    font-size: 10px;
-    font-family: monospace;
-}
-
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    transition: all 0.3s ease;
-    font-size: 14px;
-}
-
-.btn-outline {
-    background: white;
-    color: #6B7280;
-    border: 2px solid #D4D9E2;
-}
-
-.btn-outline:hover {
-    background: #F5F7FA;
-}
-</style>
 @endsection
 

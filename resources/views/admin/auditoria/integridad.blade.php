@@ -1,342 +1,158 @@
-@extends('layouts.app')
+@extends('layouts.sgdea')
+
+@section('title', 'Verificación de Integridad')
+
+@section('breadcrumbs')
+<x-breadcrumb :items="[
+    ['label' => 'Dashboard', 'route' => 'dashboard'],
+    ['label' => 'Auditoría', 'route' => 'admin.auditoria.index'],
+    ['label' => 'Verificación de Integridad', 'active' => true],
+]" />
+@endsection
 
 @section('content')
-<div class="integridad-container">
-    <div class="header-section">
+<div class="max-w-4xl mx-auto space-y-6">
+    {{-- Header --}}
+    <div class="flex items-center justify-between">
         <div>
-            <h1>Verificación de Integridad</h1>
-            <p>Validación de todos los registros de auditoría</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Verificación de Integridad</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Validación de los registros de auditoría</p>
         </div>
-        <a href="{{ route('admin.auditoria.index') }}" class="btn btn-outline">← Volver</a>
+        <a href="{{ route('admin.auditoria.index') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Volver
+        </a>
     </div>
 
     {{-- Resumen --}}
-    <div class="resumen-cards">
-        <div class="resumen-card total">
-            <div class="card-icon">📊</div>
-            <div class="card-content">
-                <div class="card-valor">{{ $resultados['total'] }}</div>
-                <div class="card-label">Total de Registros</div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {{-- Total --}}
+        <x-card padding="md">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-gray-100 dark:bg-slate-700 rounded-xl">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $totalVerificados }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Verificados</p>
+                </div>
+            </div>
+        </x-card>
+
+        {{-- Íntegros --}}
+        <x-card padding="md">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $totalIntegros }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Íntegros</p>
+                </div>
+            </div>
+        </x-card>
+
+        {{-- Comprometidos --}}
+        <x-card padding="md">
+            <div class="flex items-center gap-4">
+                <div class="p-3 {{ $totalComprometidos > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-slate-700' }} rounded-xl">
+                    <svg class="w-6 h-6 {{ $totalComprometidos > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold {{ $totalComprometidos > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white' }}">{{ $totalComprometidos }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Comprometidos</p>
+                </div>
+            </div>
+        </x-card>
+    </div>
+
+    {{-- Resultado general --}}
+    @if($totalComprometidos === 0)
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+            <div class="flex items-start gap-4">
+                <div class="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-green-800 dark:text-green-300">✓ Auditoría Íntegra</h3>
+                    <p class="text-green-700 dark:text-green-400 mt-1">
+                        Todos los {{ $totalVerificados }} registros verificados son íntegros. No se detectaron alteraciones.
+                    </p>
+                </div>
+            </div>
+        </div>
+    @else
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+            <div class="flex items-start gap-4">
+                <div class="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
+                    <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-red-800 dark:text-red-300">⚠️ Alteraciones Detectadas</h3>
+                    <p class="text-red-700 dark:text-red-400 mt-1">
+                        Se encontraron {{ $totalComprometidos }} registro(s) con problemas de integridad.
+                    </p>
+                </div>
             </div>
         </div>
 
-        <div class="resumen-card integros">
-            <div class="card-icon">✓</div>
-            <div class="card-content">
-                <div class="card-valor">{{ $resultados['integros'] }}</div>
-                <div class="card-label">Registros Íntegros</div>
-                <div class="card-porcentaje">{{ $resultados['total'] > 0 ? round(($resultados['integros'] / $resultados['total']) * 100) : 0 }}%</div>
+        {{-- Detalles de registros comprometidos --}}
+        <x-card title="Registros con Problemas" padding="none">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Fecha</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Acción</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Problema</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
+                        @foreach($resultados as $resultado)
+                            <tr class="hover:bg-red-50 dark:hover:bg-red-900/10">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">#{{ $resultado['id'] }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $resultado['fecha'] }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ $resultado['accion'] }}</td>
+                                <td class="px-4 py-3 text-sm text-red-600 dark:text-red-400">{{ $resultado['problema'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-        </div>
-
-        <div class="resumen-card alterados">
-            <div class="card-icon">⚠️</div>
-            <div class="card-content">
-                <div class="card-valor">{{ $resultados['alterados'] }}</div>
-                <div class="card-label">Registros Alterados</div>
-                <div class="card-porcentaje">{{ $resultados['total'] > 0 ? round(($resultados['alterados'] / $resultados['total']) * 100) : 0 }}%</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Resultado General --}}
-    <div class="resultado-card {{ $resultados['alterados'] == 0 ? 'exito' : 'alerta' }}">
-        @if($resultados['alterados'] == 0)
-            <strong>✓ AUDITORÍA ÍNTEGRA</strong>
-            <p>Todos los {{ $resultados['total'] }} registros han sido verificados correctamente. No se detectaron alteraciones.</p>
-        @else
-            <strong>⚠️ ALTERACIONES DETECTADAS</strong>
-            <p>Se encontraron {{ $resultados['alterados'] }} registro(s) con hash no coincidente. Ver detalles abajo.</p>
-        @endif
-    </div>
-
-    {{-- Tabla de Registros Alterados --}}
-    @if($resultados['alterados'] > 0)
-    <div class="table-card">
-        <h3>Registros con Alteraciones Detectadas</h3>
-        <table class="integridad-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Fecha</th>
-                    <th>Descripción</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($resultados['logsAlterados'] as $log)
-                <tr class="alterado">
-                    <td><code>{{ $log['id'] }}</code></td>
-                    <td>{{ $log['fecha']->format('d/m/Y H:i:s') }}</td>
-                    <td>{{ substr($log['descripción'], 0, 60) }}...</td>
-                    <td>
-                        <a href="{{ route('admin.auditoria.show', $log['id']) }}" class="btn-accion">
-                            📋 Ver
-                        </a>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+        </x-card>
     @endif
 
-    {{-- Información de Compliance --}}
-    <div class="compliance-card">
-        <h3>Compliance Fiscal</h3>
-        <p>La integridad de los registros de auditoría es obligatoria según las regulaciones fiscales colombianas. Todos los registros cuentan con:</p>
-        <ul>
-            <li>✓ Hash SHA-256 para verificar no alteración</li>
-            <li>✓ Timestamp inmutable</li>
-            <li>✓ Usuario responsable registrado</li>
-            <li>✓ IP de origen</li>
-            <li>✓ Valores antes y después de cambios</li>
-            <li>✓ Sin posibilidad de actualizar o eliminar registros</li>
-        </ul>
-    </div>
+    {{-- Información --}}
+    <x-card>
+        <div class="flex items-start gap-4">
+            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h4 class="font-semibold text-gray-900 dark:text-white">¿Qué verifica esta herramienta?</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Esta verificación analiza los últimos 100 registros de auditoría para asegurar que contienen todos los campos requeridos
+                    y no han sido alterados desde su creación. Es una medida de seguridad para garantizar la trazabilidad de las acciones en el sistema.
+                </p>
+            </div>
+        </div>
+    </x-card>
 </div>
-
-<style>
-.integridad-container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.header-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    border-bottom: 2px solid #D4D9E2;
-    padding-bottom: 20px;
-}
-
-.header-section h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1F2933;
-    margin: 0;
-}
-
-.header-section p {
-    color: #6B7280;
-    margin: 5px 0 0 0;
-}
-
-.resumen-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-@media (max-width: 768px) {
-    .resumen-cards {
-        grid-template-columns: 1fr;
-    }
-}
-
-.resumen-card {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border-left: 4px solid;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.resumen-card.total {
-    border-left-color: #2767C6;
-}
-
-.resumen-card.integros {
-    border-left-color: #28A745;
-}
-
-.resumen-card.alterados {
-    border-left-color: #DC3545;
-}
-
-.card-icon {
-    font-size: 28px;
-}
-
-.card-content {
-    flex: 1;
-}
-
-.card-valor {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1F2933;
-}
-
-.card-label {
-    font-size: 12px;
-    color: #6B7280;
-    margin-top: 4px;
-}
-
-.card-porcentaje {
-    font-size: 14px;
-    font-weight: 600;
-    color: #2767C6;
-    margin-top: 4px;
-}
-
-.resultado-card {
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 30px;
-    border-left: 4px solid;
-}
-
-.resultado-card.exito {
-    background: #E6F5EC;
-    color: #009F6B;
-    border-left-color: #28A745;
-}
-
-.resultado-card.alerta {
-    background: #F8D7DA;
-    color: #DC3545;
-    border-left-color: #DC3545;
-}
-
-.resultado-card strong {
-    display: block;
-    margin-bottom: 5px;
-}
-
-.resultado-card p {
-    margin: 0;
-}
-
-.table-card {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
-}
-
-.table-card h3 {
-    margin: 0 0 20px 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #1F2933;
-}
-
-.integridad-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.integridad-table thead {
-    background: #F5F7FA;
-    border-bottom: 2px solid #D4D9E2;
-}
-
-.integridad-table th,
-.integridad-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #D4D9E2;
-}
-
-.integridad-table th {
-    font-weight: 700;
-    color: #1F2933;
-}
-
-.integridad-table tr.alterado {
-    background: #F8D7DA;
-}
-
-.integridad-table tr.alterado:hover {
-    background: #F5C6CB;
-}
-
-code {
-    background: #F5F7FA;
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: #2767C6;
-    font-family: monospace;
-    font-size: 12px;
-}
-
-.btn-accion {
-    padding: 6px 12px;
-    background: #E4E7EB;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-decoration: none;
-    font-size: 12px;
-    transition: all 0.3s ease;
-}
-
-.btn-accion:hover {
-    background: #2767C6;
-    color: white;
-}
-
-.compliance-card {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.compliance-card h3 {
-    margin: 0 0 15px 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #1F2933;
-}
-
-.compliance-card p {
-    margin: 0 0 15px 0;
-    color: #6B7280;
-}
-
-.compliance-card ul {
-    margin: 0;
-    padding-left: 20px;
-}
-
-.compliance-card li {
-    color: #6B7280;
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    transition: all 0.3s ease;
-    font-size: 14px;
-}
-
-.btn-outline {
-    background: white;
-    color: #6B7280;
-    border: 2px solid #D4D9E2;
-}
-
-.btn-outline:hover {
-    background: #F5F7FA;
-}
-</style>
 @endsection
 

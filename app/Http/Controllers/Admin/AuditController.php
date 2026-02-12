@@ -3,126 +3,147 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AuditLog;
-use App\Services\AuditService;
+use App\Models\User;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 
 class AuditController extends Controller
 {
-    // Middleware se configura en las rutas en Laravel 12+
-
     /**
      * Listar auditoría del tenant actual
+     * - Admin de tenant ve solo su tenant
+     * - Usuario normal ve solo sus propias acciones
      */
     public function index(Request $request)
     {
+        $user = auth()->user();
         $tenantId = session('tenant_id');
-        $adminId = auth()->user()->id;
 
-        // Verificar que el usuario es admin del tenant
-        $this->verificarAdminTenant($tenantId);
-
-        // Construir query
+        // Base query - filtrar por tenant
         $query = AuditLog::where('tenant_id', $tenantId);
 
+        // Si no es admin del tenant, solo ve sus propias acciones
+        if (!$user->isAdminTenant()) {
+            $query->where('user_id', $user->id);
+        }
+
         // Filtro por usuario
-        if ($request->has('user_id') && $request->user_id) {
+        if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
 
         // Filtro por acción
-        if ($request->has('action') && $request->action) {
+        if ($request->filled('action')) {
             $query->where('action', $request->action);
         }
 
-        // Filtro por tipo de entidad
-        if ($request->has('entity_type') && $request->entity_type) {
-            $query->where('entity_type', $request->entity_type);
+        // Filtro por tipo de modelo
+        if ($request->filled('model_type')) {
+            $query->where('model_type', 'LIKE', '%' . $request->model_type . '%');
         }
 
         // Filtro por rango de fechas
-        if ($request->has('fecha_inicio') && $request->fecha_inicio) {
+        if ($request->filled('fecha_inicio')) {
             $query->whereDate('created_at', '>=', $request->fecha_inicio);
         }
-        if ($request->has('fecha_fin') && $request->fecha_fin) {
+        if ($request->filled('fecha_fin')) {
             $query->whereDate('created_at', '<=', $request->fecha_fin);
         }
 
         // Búsqueda de texto libre
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('description', 'LIKE', "%{$search}%")
+                $q->where('action', 'LIKE', "%{$search}%")
                   ->orWhere('ip_address', 'LIKE', "%{$search}%")
-                  ->orWhereHas('user', function ($q) use ($search) {
-                      $q->where('name', 'LIKE', "%{$search}%")
-                        ->orWhere('email', 'LIKE', "%{$search}%");
+                  ->orWhereHas('user', function ($q2) use ($search) {
+                      $q2->where('name', 'LIKE', "%{$search}%")
+                         ->orWhere('email', 'LIKE', "%{$search}%");
                   });
             });
         }
 
         $logs = $query->with('user')
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->paginate(25)
+            ->withQueryString();
 
-        // Usuarios para filtro
-        $usuarios = AuditLog::where('tenant_id', $tenantId)
-            ->whereNotNull('user_id')
+        // Datos para filtros
+        $acciones = AuditLog::where('tenant_id', $tenantId)
             ->distinct()
-            ->pluck('user_id')
-            ->map(function ($id) {
-                return \App\Models\User::find($id);
-            })
-            ->filter();
+            ->pluck('action')
+            ->filter()
+            ->sort()
+            ->values();
+
+        // Usuarios disponibles para filtrar (solo admin ve todos)
+        $usuarios = collect();
+        if ($user->isAdminTenant()) {
+            $usuarios = User::where('tenant_id', $tenantId)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+        }
 
         return view('admin.auditoria.index', [
             'logs' => $logs,
+            'acciones' => $acciones,
             'usuarios' => $usuarios,
-            'filtrosActivos' => $this->obtenerFiltrosActivos($request),
+            'filters' => $request->only(['action', 'model_type', 'user_id', 'fecha_inicio', 'fecha_fin', 'search']),
+            'canFilterByUser' => $user->isAdminTenant(),
         ]);
     }
 
     /**
-     * Ver detalles de un evento con auditoría completa y visor de PDF
+     * Ver detalles de un registro de auditoría
      */
     public function show($id)
     {
+        $user = auth()->user();
         $tenantId = session('tenant_id');
-        $this->verificarAdminTenant($tenantId);
 
         $log = AuditLog::where('tenant_id', $tenantId)
             ->with('user')
             ->findOrFail($id);
 
-        // Verificar integridad
-        $integro = AuditService::verificarIntegridad($log);
+        // Verificar permisos
+        if (!$user->isAdminTenant() && $log->user_id !== $user->id) {
+            abort(403, 'No tiene permisos para ver este registro.');
+        }
 
-        // Obtener auditoría completa de esa entidad
-        $auditCompletaEntidad = AuditLog::where('tenant_id', $tenantId)
-            ->where('entity_type', $log->entity_type)
-            ->where('entity_id', $log->entity_id)
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Obtener auditoría completa de ese modelo (si tiene model_type y model_id)
+        $auditCompleta = collect();
+        if ($log->model_type && $log->model_id) {
+            $auditCompleta = AuditLog::where('tenant_id', $tenantId)
+                ->where('model_type', $log->model_type)
+                ->where('model_id', $log->model_id)
+                ->with('user')
+                ->orderBy('created_at', 'desc')
+                ->limit(50)
+                ->get();
+        }
 
-        // Obtener la entidad (factura, tercero, etc) si existe
+        // Obtener la entidad si existe
         $entidad = null;
         $pdfPath = null;
 
-        if ($log->entity_type === 'factura' && $log->entity_id) {
-            $entidad = \App\Models\Factura::find($log->entity_id);
-            if ($entidad) {
-                $pdfPath = $entidad->pdf_path ? asset('storage/' . $entidad->pdf_path) : null;
+        if ($log->model_type && $log->model_id && class_exists($log->model_type)) {
+            try {
+                $entidad = $log->model_type::find($log->model_id);
+
+                // Si es una factura, obtener el PDF
+                if ($entidad && $log->model_type === \App\Models\Factura::class) {
+                    $pdfPath = $entidad->pdf_path ? route('facturas.pdf', $entidad) : null;
+                }
+            } catch (\Exception $e) {
+                // Modelo no encontrado o error
             }
-        } elseif ($log->entity_type === 'tercero' && $log->entity_id) {
-            $entidad = \App\Models\Tercero::find($log->entity_id);
         }
 
         return view('admin.auditoria.show', [
             'log' => $log,
-            'integro' => $integro,
-            'auditCompleta' => $auditCompletaEntidad,
+            'auditCompleta' => $auditCompleta,
             'entidad' => $entidad,
             'pdfPath' => $pdfPath,
         ]);
@@ -133,120 +154,130 @@ class AuditController extends Controller
      */
     public function export(Request $request)
     {
+        $user = auth()->user();
         $tenantId = session('tenant_id');
-        $this->verificarAdminTenant($tenantId);
 
-        $validated = $request->validate([
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-        ]);
-
-        // Obtener logs del período
-        $logs = AuditService::obtenerPeriodo(
-            $tenantId,
-            $validated['fecha_inicio'],
-            $validated['fecha_fin']
-        );
-
-        // Registrar la exportación
-        AuditService::registrarExportacion('auditoria', $logs->count(), 'csv');
-
-        // Generar CSV
-        $csv = "FECHA,USUARIO,ACCIÓN,ENTIDAD,DESCRIPCIÓN,IP,INTEGRIDAD\n";
-
-        foreach ($logs as $log) {
-            $integro = AuditService::verificarIntegridad($log) ? '✓' : '✗ ALTERADO';
-            $csv .= sprintf(
-                "%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
-                $log->created_at->format('Y-m-d H:i:s'),
-                $log->user->name ?? 'Sistema',
-                $log->action,
-                $log->entity_type,
-                str_replace('"', '""', $log->description),
-                $log->ip_address,
-                $integro
-            );
+        if (!$user->isAdminTenant()) {
+            abort(403, 'Solo los administradores pueden exportar la auditoría.');
         }
 
-        return response($csv)
-            ->header('Content-Type', 'text/csv; charset=utf-8')
-            ->header('Content-Disposition', 'attachment; filename=auditoria_' . $tenantId . '_' . date('Y-m-d_H-i-s') . '.csv');
+        // Base query
+        $query = AuditLog::where('tenant_id', $tenantId)
+            ->with('user')
+            ->orderBy('created_at', 'desc');
+
+        // Aplicar filtros
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('created_at', '>=', $request->fecha_inicio);
+        }
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('created_at', '<=', $request->fecha_fin);
+        }
+
+        $logs = $query->limit(10000)->get();
+
+        $filename = 'auditoria_' . now()->format('Y-m-d_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($logs) {
+            $file = fopen('php://output', 'w');
+
+            // BOM para UTF-8
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // Header
+            fputcsv($file, [
+                'Fecha',
+                'Hora',
+                'Acción',
+                'Usuario',
+                'Email',
+                'Modelo',
+                'ID',
+                'IP',
+                'Método',
+            ], ';');
+
+            foreach ($logs as $log) {
+                fputcsv($file, [
+                    $log->created_at->format('Y-m-d'),
+                    $log->created_at->format('H:i:s'),
+                    $log->action,
+                    $log->user?->name ?? 'Sistema',
+                    $log->user?->email ?? 'system@sgdea.local',
+                    class_basename($log->model_type ?? ''),
+                    $log->model_id ?? '',
+                    $log->ip_address ?? '',
+                    $log->method ?? '',
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
-     * Verificar integridad de todos los logs
+     * Verificar integridad de registros de auditoría
      */
-    public function verificarIntegridad()
+    public function verificarIntegridad(Request $request)
     {
+        $user = auth()->user();
         $tenantId = session('tenant_id');
-        $this->verificarAdminTenant($tenantId);
 
-        $logs = AuditLog::where('tenant_id', $tenantId)->get();
+        if (!$user->isAdminTenant()) {
+            abort(403, 'Solo los administradores pueden verificar la integridad.');
+        }
 
-        $resultados = [
-            'total' => $logs->count(),
-            'integros' => 0,
-            'alterados' => 0,
-            'logsAlterados' => [],
-        ];
+        // Obtener logs recientes para verificar
+        $logs = AuditLog::where('tenant_id', $tenantId)
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        $resultados = [];
+        $totalVerificados = 0;
+        $totalIntegros = 0;
+        $totalComprometidos = 0;
 
         foreach ($logs as $log) {
-            if (AuditService::verificarIntegridad($log)) {
-                $resultados['integros']++;
+            $totalVerificados++;
+
+            // Verificar integridad básica (campos requeridos presentes)
+            $integro = !empty($log->action) &&
+                       !empty($log->user_id) &&
+                       !empty($log->created_at);
+
+            if ($integro) {
+                $totalIntegros++;
             } else {
-                $resultados['alterados']++;
-                $resultados['logsAlterados'][] = [
+                $totalComprometidos++;
+                $resultados[] = [
                     'id' => $log->id,
-                    'fecha' => $log->created_at,
-                    'descripción' => $log->description,
+                    'fecha' => $log->created_at->format('Y-m-d H:i:s'),
+                    'accion' => $log->action,
+                    'problema' => 'Campos requeridos faltantes',
                 ];
             }
         }
 
         return view('admin.auditoria.integridad', [
+            'totalVerificados' => $totalVerificados,
+            'totalIntegros' => $totalIntegros,
+            'totalComprometidos' => $totalComprometidos,
             'resultados' => $resultados,
         ]);
-    }
-
-    /**
-     * Obtener filtros activos
-     */
-    private function obtenerFiltrosActivos(Request $request): array
-    {
-        $filtros = [];
-
-        if ($request->has('user_id') && $request->user_id) {
-            $filtros['user_id'] = $request->user_id;
-        }
-        if ($request->has('action') && $request->action) {
-            $filtros['action'] = $request->action;
-        }
-        if ($request->has('entity_type') && $request->entity_type) {
-            $filtros['entity_type'] = $request->entity_type;
-        }
-        if ($request->has('fecha_inicio') && $request->fecha_inicio) {
-            $filtros['fecha_inicio'] = $request->fecha_inicio;
-        }
-        if ($request->has('fecha_fin') && $request->fecha_fin) {
-            $filtros['fecha_fin'] = $request->fecha_fin;
-        }
-        if ($request->has('search') && $request->search) {
-            $filtros['search'] = $request->search;
-        }
-
-        return $filtros;
-    }
-
-    /**
-     * Verificar que el usuario es admin del tenant
-     */
-    private function verificarAdminTenant($tenantId)
-    {
-        $tenant = \App\Models\Tenant::find($tenantId);
-
-        if (!$tenant || $tenant->superadmin_id !== auth()->user()->id) {
-            abort(403, 'No tienes permiso para acceder a la auditoría');
-        }
     }
 }
 

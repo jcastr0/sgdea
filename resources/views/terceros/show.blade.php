@@ -250,6 +250,17 @@
             </div>
         </div>
     </div>
+
+    {{-- Historial de Cambios --}}
+    @if(isset($historial))
+    <x-audit-history
+        :logs="$historial"
+        title="Historial de Cambios"
+        subtitle="Registro de todas las modificaciones de este tercero"
+        :limit="10"
+        :showLink="false"
+    />
+    @endif
 </div>
 @endsection
 

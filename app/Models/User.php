@@ -207,6 +207,25 @@ class User extends Authenticatable
     }
 
     /**
+     * Verifica si el usuario es admin del tenant actual
+     */
+    public function isAdminTenant(): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+        return in_array($this->role->slug, ['superadmin', 'admin']);
+    }
+
+    /**
+     * Verifica si el usuario es superadmin global
+     */
+    public function isSuperadminGlobal(): bool
+    {
+        return $this->role && $this->role->slug === 'superadmin_global';
+    }
+
+    /**
      * Obtiene todos los permisos del usuario
      */
     public function getAllPermissions(): array
