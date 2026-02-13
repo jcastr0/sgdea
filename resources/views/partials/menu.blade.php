@@ -49,6 +49,7 @@
         </ul>
     </div>
 
+    {{-- DESHABILITADO TEMPORALMENTE - Sección Administración con Usuarios Pendientes
     <div class="menu-section">
         <h4>Administración</h4>
         <ul>
@@ -77,6 +78,7 @@
             @endcanAccess
         </ul>
     </div>
+    --}}
 </nav>
 
 <style>

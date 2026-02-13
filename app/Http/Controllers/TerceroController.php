@@ -29,15 +29,28 @@ class TerceroController extends Controller
 
         $tenantId = session('tenant_id');
 
-        // Estadísticas del tercero
-        $stats = \App\Models\Factura::where('tercero_id', $tercero->id)
-            ->where('tenant_id', $tenantId)
-            ->selectRaw('
+        // Estadísticas del tercero con desglose por tipo de documento
+        $baseQuery = \App\Models\Factura::where('tercero_id', $tercero->id)
+            ->where('tenant_id', $tenantId);
+
+        $stats = $baseQuery->selectRaw('
                 COUNT(*) as total_facturas,
-                COALESCE(SUM(total_pagar), 0) as total_facturado,
                 MAX(fecha_factura) as ultima_factura
             ')
             ->first();
+
+        // Calcular totales por tipo de documento (solo facturas aceptadas para totales)
+        $totalFacturasVenta = (clone $baseQuery)->deVenta()->aceptadas()->sum('total_pagar');
+        $totalNotasDebito = (clone $baseQuery)->notasDebito()->aceptadas()->sum('total_pagar');
+        $totalNotasCredito = (clone $baseQuery)->notasCredito()->aceptadas()->sum('total_pagar');
+
+        // Total neto: Facturas + Notas Débito - Notas Crédito
+        $totalFacturadoNeto = $totalFacturasVenta + $totalNotasDebito - $totalNotasCredito;
+
+        // Conteos por tipo
+        $conteoFacturasVenta = (clone $baseQuery)->deVenta()->count();
+        $conteoNotasCredito = (clone $baseQuery)->notasCredito()->count();
+        $conteoNotasDebito = (clone $baseQuery)->notasDebito()->count();
 
         // Últimas 5 facturas
         $ultimasFacturas = \App\Models\Factura::where('tercero_id', $tercero->id)
@@ -58,7 +71,13 @@ class TerceroController extends Controller
             'tercero' => $tercero,
             'stats' => [
                 'total_facturas' => $stats->total_facturas ?? 0,
-                'total_facturado' => $stats->total_facturado ?? 0,
+                'total_facturas_venta' => $conteoFacturasVenta,
+                'total_notas_credito' => $conteoNotasCredito,
+                'total_notas_debito' => $conteoNotasDebito,
+                'total_facturado' => $totalFacturasVenta,
+                'total_notas_debito_monto' => $totalNotasDebito,
+                'total_notas_credito_monto' => $totalNotasCredito,
+                'total_facturado_neto' => max(0, $totalFacturadoNeto),
                 'ultima_factura' => $stats->ultima_factura,
             ],
             'ultimasFacturas' => $ultimasFacturas,

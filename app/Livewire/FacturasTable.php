@@ -174,8 +174,16 @@ class FacturasTable extends Component
         $query = $this->buildQuery();
 
         $total = $query->count();
-        $sumaTotalPagar = $query->sum('total_pagar');
-        $promedio = $total > 0 ? $sumaTotalPagar / $total : 0;
+
+        // Calcular montos por tipo de documento
+        $baseQuery = $this->buildQuery();
+        $totalFacturasVenta = (clone $baseQuery)->deVenta()->sum('total_pagar');
+        $totalNotasDebito = (clone $baseQuery)->notasDebito()->sum('total_pagar');
+        $totalNotasCredito = (clone $baseQuery)->notasCredito()->sum('total_pagar');
+
+        // Total Neto = Facturas + Notas Débito - Notas Crédito
+        $totalNeto = $totalFacturasVenta + $totalNotasDebito - $totalNotasCredito;
+        $promedio = $total > 0 ? $totalNeto / $total : 0;
 
         // Contar por estado (sin filtros)
         $porEstado = Factura::byTenant($tenantId)
@@ -184,11 +192,22 @@ class FacturasTable extends Component
             ->pluck('total', 'estado')
             ->toArray();
 
+        // Contar por tipo de documento
+        $porTipo = Factura::byTenant($tenantId)
+            ->selectRaw('tipo_documento, COUNT(*) as total')
+            ->groupBy('tipo_documento')
+            ->pluck('total', 'tipo_documento')
+            ->toArray();
+
         return [
             'total' => $total,
-            'suma_total_pagar' => $sumaTotalPagar,
+            'total_facturas_venta' => $totalFacturasVenta,
+            'total_notas_debito' => $totalNotasDebito,
+            'total_notas_credito' => $totalNotasCredito,
+            'total_neto' => max(0, $totalNeto), // Total facturado real
             'promedio_por_factura' => $promedio,
             'por_estado' => $porEstado,
+            'por_tipo' => $porTipo,
         ];
     }
 

@@ -102,27 +102,31 @@ trait Auditable
 
     /**
      * Obtener el ID del tenant actual
+     *
+     * Devuelve null para acciones globales, usuarios sin tenant asignado,
+     * o acciones sin autenticación (ej: login fallido, acciones del sistema)
      */
     protected function getAuditTenantId(): ?int
     {
         // Si el modelo tiene tenant_id, usarlo
-        if (isset($this->tenant_id)) {
+        if (isset($this->tenant_id) && $this->tenant_id !== null) {
             return $this->tenant_id;
         }
 
         // Intentar obtener del usuario autenticado
         $user = Auth::user();
-        if ($user && isset($user->tenant_id)) {
+        if ($user && isset($user->tenant_id) && $user->tenant_id !== null) {
             return $user->tenant_id;
         }
 
         // Intentar obtener de sesión o request
-        if (session()->has('tenant_id')) {
+        if (session()->has('tenant_id') && session('tenant_id') !== null) {
             return session('tenant_id');
         }
 
-        // Tenant por defecto (1 = Demo)
-        return 1;
+        // Sin tenant identificado, devolver null
+        // Esto aplica para: superadmin global, login fallido, acciones del sistema
+        return null;
     }
 
     /**

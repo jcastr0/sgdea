@@ -1,12 +1,19 @@
 @extends('layouts.sgdea')
 
-@section('title', 'Factura ' . $factura->numero_factura)
+@php
+    $tipoDocumento = $factura->tipo_documento ?? 'Factura de Venta';
+    $esNotaCredito = str_contains(strtolower($tipoDocumento), 'crédito') || str_contains(strtolower($tipoDocumento), 'credito');
+    $esNotaDebito = str_contains(strtolower($tipoDocumento), 'débito') || str_contains(strtolower($tipoDocumento), 'debito');
+    $tipoCorto = $esNotaCredito ? 'NC' : ($esNotaDebito ? 'ND' : 'Factura');
+@endphp
+
+@section('title', $tipoCorto . ' ' . $factura->numero_factura)
+@section('page-title', 'Detalle de Factura')
 
 @section('breadcrumbs')
 <x-breadcrumb :items="[
-    ['label' => 'Dashboard', 'route' => 'dashboard'],
-    ['label' => 'Facturas', 'route' => 'facturas.index'],
-    ['label' => $factura->numero_factura, 'active' => true],
+    ['label' => 'Facturas', 'url' => route('facturas.index')],
+    ['label' => $factura->numero_factura],
 ]" />
 @endsection
 
@@ -20,7 +27,7 @@
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-2">
                         <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                            Factura #{{ $factura->numero_factura }}
+                            {{ $tipoDocumento }} #{{ $factura->numero_factura }}
                         </h1>
                         <x-status-badge :status="$factura->estado" size="md" />
                     </div>
@@ -55,10 +62,22 @@
 
                 {{-- Total destacado --}}
                 <div class="text-right">
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Total a Pagar</p>
-                    <p class="text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400">
-                        ${{ number_format($factura->total_pagar, 0, ',', '.') }}
-                    </p>
+                    @if($esNotaCredito)
+                        <p class="text-sm text-red-500 dark:text-red-400 mb-1">Nota Crédito (Resta)</p>
+                        <p class="text-3xl lg:text-4xl font-bold text-red-600 dark:text-red-400">
+                            −${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                        </p>
+                    @elseif($esNotaDebito)
+                        <p class="text-sm text-green-500 dark:text-green-400 mb-1">Nota Débito (Suma)</p>
+                        <p class="text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400">
+                            +${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                        </p>
+                    @else
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Total a Pagar</p>
+                        <p class="text-3xl lg:text-4xl font-bold text-blue-600 dark:text-blue-400">
+                            ${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                        </p>
+                    @endif
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {{ $factura->fecha_factura?->format('d M Y') }}
                     </p>
@@ -352,7 +371,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-gray-900 dark:text-white">Factura #{{ $factura->numero_factura }}</h3>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ $tipoCorto }} #{{ $factura->numero_factura }}</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400">Vista previa del documento PDF</p>
                     </div>
                 </div>

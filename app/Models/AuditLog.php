@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * - Incluye hash SHA256 para verificar integridad del registro
  *
  * @property int $id
- * @property int $tenant_id
+ * @property int|null $tenant_id
  * @property int $user_id
  * @property string $action
  * @property string|null $model_type
@@ -370,7 +370,7 @@ class AuditLog extends Model
      */
     public static function registrar(
         string $action,
-        int $tenantId,
+        ?int $tenantId,
         ?int $userId = null,
         ?string $modelType = null,
         ?int $modelId = null,
@@ -421,7 +421,7 @@ class AuditLog extends Model
     /**
      * Registrar login fallido
      */
-    public static function registrarLoginFallido(int $tenantId, string $username, ?string $razon = null): self
+    public static function registrarLoginFallido(?int $tenantId, string $username, ?string $razon = null): self
     {
         return self::registrar(
             self::ACTION_LOGIN_FAILED,
@@ -441,7 +441,7 @@ class AuditLog extends Model
     /**
      * Registrar logout
      */
-    public static function registrarLogout(int $tenantId, int $userId): self
+    public static function registrarLogout(?int $tenantId, int $userId): self
     {
         return self::registrar(
             self::ACTION_LOGOUT,

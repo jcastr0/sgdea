@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto space-y-6">
+<div class="space-y-6">
     {{-- Header con perfil --}}
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8">
@@ -79,21 +79,21 @@
         {{-- Acciones --}}
         <div class="px-6 py-3 bg-gray-50 dark:bg-slate-700/50 flex flex-wrap gap-3">
             <a href="{{ route('terceros.edit', $tercero) }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors">
+               class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                 </svg>
                 Editar
             </a>
             <a href="{{ route('facturas.index', ['terceroId' => $tercero->id]) }}"
-               class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors">
+               class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 Ver Facturas
             </a>
             <a href="{{ route('terceros.index') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors">
+               class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
@@ -103,7 +103,8 @@
     </div>
 
     {{-- Estadísticas --}}
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {{-- Total Documentos --}}
         <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
             <div class="flex items-center gap-3">
                 <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -113,10 +114,17 @@
                 </div>
                 <div>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total_facturas'] }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Facturas</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Documentos</p>
+                    <div class="flex gap-2 mt-1 text-xs">
+                        <span class="text-blue-600 dark:text-blue-400">FV: {{ $stats['total_facturas_venta'] ?? 0 }}</span>
+                        <span class="text-red-600 dark:text-red-400">NC: {{ $stats['total_notas_credito'] ?? 0 }}</span>
+                        <span class="text-green-600 dark:text-green-400">ND: {{ $stats['total_notas_debito'] ?? 0 }}</span>
+                    </div>
                 </div>
             </div>
         </div>
+
+        {{-- Total Facturado Neto --}}
         <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
             <div class="flex items-center gap-3">
                 <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -125,11 +133,32 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ number_format($stats['total_facturado'], 0, ',', '.') }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Facturado</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ number_format($stats['total_facturado_neto'] ?? 0, 0, ',', '.') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Neto</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">FV + ND - NC</p>
                 </div>
             </div>
         </div>
+
+        {{-- Desglose: Notas Crédito/Débito --}}
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Facturas:</span>
+                    <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">+${{ number_format($stats['total_facturado'] ?? 0, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Notas Débito:</span>
+                    <span class="text-sm font-semibold text-green-600 dark:text-green-400">+${{ number_format($stats['total_notas_debito_monto'] ?? 0, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Notas Crédito:</span>
+                    <span class="text-sm font-semibold text-red-600 dark:text-red-400">-${{ number_format($stats['total_notas_credito_monto'] ?? 0, 0, ',', '.') }}</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Última Factura --}}
         <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
             <div class="flex items-center gap-3">
                 <div class="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
@@ -142,21 +171,6 @@
                         {{ $stats['ultima_factura'] ? \Carbon\Carbon::parse($stats['ultima_factura'])->format('d/m/Y') : '-' }}
                     </p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Última Factura</p>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
-            <div class="flex items-center gap-3">
-                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                        ${{ $stats['total_facturas'] > 0 ? number_format($stats['total_facturado'] / $stats['total_facturas'], 0, ',', '.') : 0 }}
-                    </p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Promedio/Factura</p>
                 </div>
             </div>
         </div>

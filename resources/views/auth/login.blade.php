@@ -345,7 +345,7 @@
                                autocomplete="current-password">
                         <button type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                class="cursor-pointer absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                             <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -389,7 +389,7 @@
                 {{-- Botón Submit --}}
                 <div class="opacity-0 fade-in-up delay-500" style="animation-fill-mode: forwards;">
                     <button type="submit"
-                            class="btn-shine w-full py-3.5 px-4 rounded-xl text-white font-semibold text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                            class="cursor-pointer btn-shine w-full py-3.5 px-4 rounded-xl text-white font-semibold text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                             style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));"
                             :disabled="isLoading">
                         {{-- Loading spinner --}}
@@ -407,7 +407,8 @@
                 </div>
             </form>
 
-            {{-- Separador --}}
+            {{-- Separador y registro (ocultado temporalmente) --}}
+            {{--
             @if(Route::has('auth.register'))
                 <div class="relative my-6 opacity-0 fade-in-up delay-500" style="animation-fill-mode: forwards;">
                     <div class="absolute inset-0 flex items-center">
@@ -420,7 +421,6 @@
                     </div>
                 </div>
 
-                {{-- Link a Registro --}}
                 <div class="text-center opacity-0 fade-in-up delay-500" style="animation-fill-mode: forwards;">
                     <a href="{{ route('auth.register') }}"
                        class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
@@ -431,6 +431,7 @@
                     </a>
                 </div>
             @endif
+            --}}
 
             {{-- Toggle Dark Mode --}}
             <div class="mt-6 flex justify-center opacity-0 fade-in-up delay-500" style="animation-fill-mode: forwards;">

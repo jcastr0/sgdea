@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -70,6 +71,15 @@ class CreateSuperadmin extends Command
         $this->info('🌐 Creando Superadmin GLOBAL...');
         $this->newLine();
 
+        // Obtener todos los permisos
+        $allPermissions = Permission::all();
+
+        if ($allPermissions->isEmpty()) {
+            $this->error('❌ No hay permisos en el sistema. Ejecute primero los seeders:');
+            $this->line('   php artisan db:seed --class=PermissionSeeder');
+            return Command::FAILURE;
+        }
+
         // Obtener o crear el rol superadmin_global
         $role = Role::where('slug', 'superadmin_global')
             ->whereNull('tenant_id')
@@ -83,10 +93,15 @@ class CreateSuperadmin extends Command
                 'slug' => 'superadmin_global',
                 'description' => 'Acceso total a todos los tenants',
                 'is_system' => true,
+                'is_default' => false,
                 'priority' => 1000,
             ]);
             $this->info('   ✅ Rol superadmin_global creado (ID: ' . $role->id . ')');
         }
+
+        // Siempre asignar todos los permisos al rol superadmin_global
+        $role->permissions()->sync($allPermissions->pluck('id'));
+        $this->info('   ✅ Asignados ' . $allPermissions->count() . ' permisos al rol superadmin_global');
 
         // Obtener datos del usuario
         $name = $this->option('name') ?? $this->ask('Nombre completo', 'Super Admin');

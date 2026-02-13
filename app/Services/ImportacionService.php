@@ -348,17 +348,23 @@ class ImportacionService
             // Crear factura
             // Mapear estado comercial del archivo (Aceptado, Rechazado, vacío -> pendiente)
             $estadoComercial = $this->mapearEstadoComercial($valores['estado_comercial'] ?? null);
+            // Mapear tipo de documento (FACTURA DE VENTA, NOTA CREDITO, NOTA DEBITO)
+            $tipoDocumento = $this->mapearTipoDocumento($valores['tipo_documento'] ?? null);
 
             $factura = Factura::create([
                 'tenant_id' => $tenantId,
                 'tercero_id' => $tercero->id,
                 'numero_factura' => $valores['numero_factura'],
+                'prefijo' => $valores['prefijo'] ?? null,
+                'tipo_documento' => $tipoDocumento,
                 'fecha_factura' => $fechaFactura,
                 'fecha_vencimiento' => $this->parsearFecha($valores['fecha_vencimiento'] ?? null),
                 'subtotal' => $subtotal,
                 'iva' => $iva,
                 'descuento' => $descuento,
                 'total_pagar' => $total,
+                'moneda' => $valores['moneda'] ?? 'COP',
+                'forma_pago' => $valores['forma_pago'] ?? null,
                 'cufe' => $cufe,
                 'estado' => $estadoComercial,
             ]);
@@ -448,6 +454,41 @@ class ImportacionService
 
         // Si no se encuentra coincidencia, retornar pendiente
         return 'pendiente';
+    }
+
+    /**
+     * Mapear tipo de documento del archivo a valor válido en BD
+     *
+     * @param string|null $tipoDocumento El valor del campo Tipo Documento del archivo
+     * @return string Tipo mapeado: 'FACTURA DE VENTA', 'NOTA CREDITO' o 'NOTA DEBITO'
+     */
+    public function mapearTipoDocumento(?string $tipoDocumento): string
+    {
+        // Si está vacío o nulo, retornar FACTURA DE VENTA por defecto
+        if (empty($tipoDocumento) || trim($tipoDocumento) === '') {
+            return 'FACTURA DE VENTA';
+        }
+
+        $tipoNorm = $this->normalizar($tipoDocumento);
+
+        // Variantes para NOTA CREDITO
+        $notaCredito = ['nota_credito', 'notacredito', 'nc', 'credit_note', 'credito'];
+        foreach ($notaCredito as $variante) {
+            if ($tipoNorm === $variante || strpos($tipoNorm, $variante) !== false) {
+                return 'NOTA CREDITO';
+            }
+        }
+
+        // Variantes para NOTA DEBITO
+        $notaDebito = ['nota_debito', 'notadebito', 'nd', 'debit_note', 'debito'];
+        foreach ($notaDebito as $variante) {
+            if ($tipoNorm === $variante || strpos($tipoNorm, $variante) !== false) {
+                return 'NOTA DEBITO';
+            }
+        }
+
+        // Por defecto, retornar FACTURA DE VENTA
+        return 'FACTURA DE VENTA';
     }
 
     /**

@@ -177,17 +177,42 @@ class ExcelImportService
      */
     private function mapearTipoDocumento(string $tipo): ?string
     {
+        // Normalizar: mayúsculas y quitar tildes
         $tipo = strtoupper($tipo);
+        $tipo = $this->quitarTildes($tipo);
 
+        // Factura de Venta
         if (strpos($tipo, 'FACTURA') !== false && strpos($tipo, 'VENTA') !== false) {
             return 'Factura de Venta';
         }
 
-        if (strpos($tipo, 'NOTA') !== false && strpos($tipo, 'CRÉDITO') !== false) {
-            return 'Nota de Crédito';
+        // Nota Crédito (con o sin tilde)
+        if (strpos($tipo, 'NOTA') !== false && strpos($tipo, 'CREDITO') !== false) {
+            return 'Nota Crédito';
         }
 
-        return null;
+        // Nota Débito (con o sin tilde)
+        if (strpos($tipo, 'NOTA') !== false && strpos($tipo, 'DEBITO') !== false) {
+            return 'Nota Débito';
+        }
+
+        // Si solo dice FACTURA
+        if (strpos($tipo, 'FACTURA') !== false) {
+            return 'Factura de Venta';
+        }
+
+        // Valor por defecto si no se reconoce
+        return $tipo ?: 'Factura de Venta';
+    }
+
+    /**
+     * Quitar tildes de un string
+     */
+    private function quitarTildes(string $texto): string
+    {
+        $buscar = ['Á', 'É', 'Í', 'Ó', 'Ú', 'á', 'é', 'í', 'ó', 'ú', 'Ñ', 'ñ'];
+        $reemplazar = ['A', 'E', 'I', 'O', 'U', 'a', 'e', 'i', 'o', 'u', 'N', 'n'];
+        return str_replace($buscar, $reemplazar, $texto);
     }
 
     /**

@@ -30,7 +30,8 @@ return new class extends Migration
 
             // ---- Relaciones ----
             $table->foreignId('tenant_id')
-                ->comment('FK al tenant donde ocurrió la acción')
+                ->nullable()
+                ->comment('FK al tenant donde ocurrió la acción (NULL para acciones globales o sin autenticación)')
                 ->constrained('tenants')
                 ->onDelete('cascade');
 

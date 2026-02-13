@@ -17,12 +17,16 @@ class Factura extends Model
         'tercero_id',
         'cufe',
         'numero_factura',
+        'prefijo',
+        'tipo_documento',
         'fecha_factura',
         'fecha_vencimiento',
         'subtotal',
         'iva',
         'descuento',
         'total_pagar',
+        'moneda',
+        'forma_pago',
         'motonave',
         'trb',
         'servicio_descripcion',
@@ -64,6 +68,85 @@ class Factura extends Model
     public function scopeByTenant($query, $tenantId)
     {
         return $query->where('tenant_id', $tenantId);
+    }
+
+    /**
+     * Scope: Solo facturas aceptadas
+     */
+    public function scopeAceptadas($query)
+    {
+        return $query->where('estado', 'aceptado');
+    }
+
+    /**
+     * Scope: Solo facturas de venta
+     */
+    public function scopeDeVenta($query)
+    {
+        return $query->where('tipo_documento', 'FACTURA DE VENTA');
+    }
+
+    /**
+     * Scope: Solo notas de crédito
+     */
+    public function scopeNotasCredito($query)
+    {
+        return $query->where('tipo_documento', 'NOTA CREDITO');
+    }
+
+    /**
+     * Scope: Solo notas de débito
+     */
+    public function scopeNotasDebito($query)
+    {
+        return $query->where('tipo_documento', 'NOTA DEBITO');
+    }
+
+    /**
+     * Determina si el documento SUMA al total facturado
+     * Facturas de Venta y Notas Débito suman
+     */
+    public function esSuma(): bool
+    {
+        return in_array($this->tipo_documento, ['FACTURA DE VENTA', 'NOTA DEBITO']);
+    }
+
+    /**
+     * Determina si el documento RESTA del total facturado
+     * Notas Crédito restan (devoluciones)
+     */
+    public function esResta(): bool
+    {
+        return $this->tipo_documento === 'NOTA CREDITO';
+    }
+
+    /**
+     * Obtiene el valor con signo para cálculos
+     * Positivo para facturas y notas débito, negativo para notas crédito
+     */
+    public function getValorConSigno(): float
+    {
+        return $this->esResta() ? -($this->total_pagar ?? 0) : ($this->total_pagar ?? 0);
+    }
+
+    /**
+     * Scope: Facturas con PDF asociado
+     */
+    public function scopeConPdf($query)
+    {
+        return $query->whereNotNull('pdf_path')
+                     ->where('pdf_path', '!=', '');
+    }
+
+    /**
+     * Scope: Facturas sin PDF asociado
+     */
+    public function scopeSinPdf($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('pdf_path')
+              ->orWhere('pdf_path', '=', '');
+        });
     }
 
     /**
@@ -211,6 +294,14 @@ class Factura extends Model
         }
 
         return $query;
+    }
+
+    /**
+     * Scope: Alias para búsqueda avanzada (compatibilidad)
+     */
+    public function scopeBusquedaAvanzada($query, $filters = [])
+    {
+        return $this->scopeAdvancedSearch($query, $filters);
     }
 
     /**

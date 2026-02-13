@@ -175,17 +175,28 @@ class FacturaService
             $query->busquedaAvanzada($filtros);
         }
 
+        // Montos por tipo de documento
+        $totalFacturado = (clone $query)->deVenta()->aceptadas()->sum('total_pagar');
+        $totalNotasDebito = (clone $query)->notasDebito()->aceptadas()->sum('total_pagar');
+        $totalNotasCredito = (clone $query)->notasCredito()->aceptadas()->sum('total_pagar');
+
+        // Total Neto = Facturas + Notas Débito - Notas Crédito
+        $totalFacturadoNeto = $totalFacturado + $totalNotasDebito - $totalNotasCredito;
+
         return [
             'total_facturas' => (clone $query)->count(),
             'total_facturas_venta' => (clone $query)->deVenta()->count(),
             'total_notas_credito' => (clone $query)->notasCredito()->count(),
+            'total_notas_debito' => (clone $query)->notasDebito()->count(),
             'facturas_aceptadas' => (clone $query)->aceptadas()->count(),
             'facturas_rechazadas' => (clone $query)->where('estado', 'rechazada')->count(),
             'facturas_pendientes' => (clone $query)->where('estado', 'pendiente')->count(),
             'con_pdf' => (clone $query)->conPdf()->count(),
             'sin_pdf' => (clone $query)->sinPdf()->count(),
-            'total_facturado' => (clone $query)->deVenta()->aceptadas()->sum('total_pagar'),
-            'total_notas_credito_monto' => (clone $query)->notasCredito()->aceptadas()->sum('total_pagar'),
+            'total_facturado' => $totalFacturado,
+            'total_notas_debito_monto' => $totalNotasDebito,
+            'total_notas_credito_monto' => $totalNotasCredito,
+            'total_facturado_neto' => max(0, $totalFacturadoNeto), // Total real (nunca negativo)
         ];
     }
 

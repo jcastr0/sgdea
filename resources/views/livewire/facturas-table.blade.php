@@ -27,7 +27,7 @@
             </div>
         </x-card>
 
-        {{-- Suma Total --}}
+        {{-- Total Neto Facturado --}}
         <x-card class="!p-4">
             <div class="flex items-center gap-4">
                 <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
@@ -36,8 +36,11 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ number_format($estadisticas['suma_total_pagar'], 0, ',', '.') }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total a Pagar</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ number_format($estadisticas['total_neto'] ?? 0, 0, ',', '.') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Neto Facturado</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500" title="Facturas + Notas Débito - Notas Crédito">
+                        (+FV +ND -NC)
+                    </p>
                 </div>
             </div>
         </x-card>
@@ -79,6 +82,51 @@
                     </div>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Por Estado</p>
                 </div>
+            </div>
+        </x-card>
+    </div>
+
+    {{-- Desglose de Totales por Tipo de Documento --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {{-- Facturas de Venta (+) --}}
+        <x-card class="!p-3 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl font-bold text-blue-600">+</span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Facturas de Venta</p>
+                        <p class="text-xs text-gray-500">{{ $estadisticas['por_tipo']['FACTURA DE VENTA'] ?? 0 }} documentos</p>
+                    </div>
+                </div>
+                <p class="text-lg font-bold text-blue-600 dark:text-blue-400">${{ number_format($estadisticas['total_facturas_venta'] ?? 0, 0, ',', '.') }}</p>
+            </div>
+        </x-card>
+
+        {{-- Notas Débito (+) --}}
+        <x-card class="!p-3 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl font-bold text-green-600">+</span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Notas Débito</p>
+                        <p class="text-xs text-gray-500">{{ $estadisticas['por_tipo']['NOTA DEBITO'] ?? 0 }} documentos</p>
+                    </div>
+                </div>
+                <p class="text-lg font-bold text-green-600 dark:text-green-400">${{ number_format($estadisticas['total_notas_debito'] ?? 0, 0, ',', '.') }}</p>
+            </div>
+        </x-card>
+
+        {{-- Notas Crédito (-) --}}
+        <x-card class="!p-3 border-l-4 border-red-500">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl font-bold text-red-600">−</span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Notas Crédito</p>
+                        <p class="text-xs text-gray-500">{{ $estadisticas['por_tipo']['NOTA CREDITO'] ?? 0 }} documentos</p>
+                    </div>
+                </div>
+                <p class="text-lg font-bold text-red-600 dark:text-red-400">−${{ number_format($estadisticas['total_notas_credito'] ?? 0, 0, ',', '.') }}</p>
             </div>
         </x-card>
     </div>
@@ -258,14 +306,26 @@
                     </thead>
                     <tbody class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700">
                         @forelse($facturas as $factura)
+                            @php
+                                $tipoDoc = $factura->tipo_documento ?? 'Factura de Venta';
+                                $esNC = str_contains(strtolower($tipoDoc), 'crédito') || str_contains(strtolower($tipoDoc), 'credito');
+                                $esND = str_contains(strtolower($tipoDoc), 'débito') || str_contains(strtolower($tipoDoc), 'debito');
+                                $badgeColor = $esNC ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                                             ($esND ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                                             'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400');
+                                $tipoCorto = $esNC ? 'NC' : ($esND ? 'ND' : 'FV');
+                            @endphp
                             <tr class="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                 {{-- Número de Factura --}}
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <div class="flex flex-col">
-                                        <a href="{{ route('facturas.show', $factura) }}"
-                                           class="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                                            {{ $factura->numero_factura }}
-                                        </a>
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-1.5 py-0.5 text-[10px] font-bold rounded {{ $badgeColor }}">{{ $tipoCorto }}</span>
+                                            <a href="{{ route('facturas.show', $factura) }}"
+                                               class="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+                                                {{ $factura->numero_factura }}
+                                            </a>
+                                        </div>
                                         @if($factura->cufe)
                                             <span class="text-xs text-gray-500 dark:text-gray-400 font-mono truncate max-w-[150px]" title="{{ $factura->cufe }}">
                                                 {{ Str::limit($factura->cufe, 20) }}
@@ -293,9 +353,19 @@
 
                                 {{-- Total --}}
                                 <td class="px-4 py-3 whitespace-nowrap text-right">
-                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                                        ${{ number_format($factura->total_pagar, 0, ',', '.') }}
-                                    </span>
+                                    @if($esNC)
+                                        <span class="text-sm font-semibold text-red-600 dark:text-red-400" title="Nota Crédito - Resta del total">
+                                            −${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                                        </span>
+                                    @elseif($esND)
+                                        <span class="text-sm font-semibold text-green-600 dark:text-green-400" title="Nota Débito - Suma al total">
+                                            +${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                                        </span>
+                                    @else
+                                        <span class="text-sm font-semibold text-gray-900 dark:text-white" title="Factura de Venta - Suma al total">
+                                            ${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                                        </span>
+                                    @endif
                                 </td>
 
                                 {{-- Estado --}}
@@ -368,8 +438,14 @@
     {{-- Cards Móvil --}}
     <div class="lg:hidden space-y-4" wire:loading.class="opacity-50">
         @forelse($facturas as $factura)
+            @php
+                $tipoDocMobile = $factura->tipo_documento ?? 'Factura de Venta';
+                $esNCMobile = str_contains(strtolower($tipoDocMobile), 'crédito') || str_contains(strtolower($tipoDocMobile), 'credito');
+                $esNDMobile = str_contains(strtolower($tipoDocMobile), 'débito') || str_contains(strtolower($tipoDocMobile), 'debito');
+                $tipoCortoMobile = $esNCMobile ? 'NC' : ($esNDMobile ? 'ND' : 'FV');
+            @endphp
             <x-mobile-card
-                :title="$factura->numero_factura"
+                :title="$tipoCortoMobile . ' ' . $factura->numero_factura"
                 :subtitle="$factura->tercero->nombre_razon_social ?? 'Sin cliente'"
                 :href="route('facturas.show', $factura)"
             >
@@ -380,9 +456,19 @@
                 <x-data-line label="Fecha" :value="$factura->fecha_factura?->format('d/m/Y') ?? '-'" />
                 <x-data-line label="NIT" :value="$factura->tercero->nit ?? '-'" />
                 <x-data-line label="Total">
-                    <span class="font-bold text-green-600 dark:text-green-400">
-                        ${{ number_format($factura->total_pagar, 0, ',', '.') }}
-                    </span>
+                    @if($esNCMobile)
+                        <span class="font-bold text-red-600 dark:text-red-400" title="Nota Crédito - Resta">
+                            −${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                        </span>
+                    @elseif($esNDMobile)
+                        <span class="font-bold text-green-600 dark:text-green-400" title="Nota Débito - Suma">
+                            +${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                        </span>
+                    @else
+                        <span class="font-bold text-blue-600 dark:text-blue-400">
+                            ${{ number_format($factura->total_pagar, 0, ',', '.') }}
+                        </span>
+                    @endif
                 </x-data-line>
 
                 <x-slot:actions>

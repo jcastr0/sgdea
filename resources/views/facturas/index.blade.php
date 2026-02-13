@@ -1,11 +1,11 @@
 @extends('layouts.sgdea', ['usesLivewire' => true])
 
 @section('title', 'Facturas')
+@section('page-title', 'Gestión de Facturas')
 
 @section('breadcrumbs')
 <x-breadcrumb :items="[
-    ['label' => 'Dashboard', 'route' => 'dashboard'],
-    ['label' => 'Facturas', 'active' => true],
+    ['label' => 'Facturas'],
 ]" />
 @endsection
 

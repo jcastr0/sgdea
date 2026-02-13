@@ -34,7 +34,11 @@ class DashboardService
 
     /**
      * Calcula el Total Facturado Neto
-     * Ventas Aceptadas - Notas de Crédito Aceptadas
+     * Fórmula: Ventas Aceptadas + Notas de Débito Aceptadas - Notas de Crédito Aceptadas
+     *
+     * - Factura de Venta: SUMA (ingreso)
+     * - Nota Débito: SUMA (cargo adicional)
+     * - Nota Crédito: RESTA (devolución)
      */
     public function getTotalFacturadoNeto(?int $terceroId = null): float
     {
@@ -44,15 +48,23 @@ class DashboardService
             $query->where('tercero_id', $terceroId);
         }
 
+        // Facturas de Venta - SUMAN
         $ventasAceptadas = (clone $query)
             ->deVenta()
             ->sum('total_pagar');
 
+        // Notas de Débito - SUMAN (cargos adicionales)
+        $notasDebitoAceptadas = (clone $query)
+            ->notasDebito()
+            ->sum('total_pagar');
+
+        // Notas de Crédito - RESTAN (devoluciones)
         $notasCreditoAceptadas = (clone $query)
             ->notasCredito()
             ->sum('total_pagar');
 
-        $neto = $ventasAceptadas - $notasCreditoAceptadas;
+        // Total Neto = Ventas + Notas Débito - Notas Crédito
+        $neto = $ventasAceptadas + $notasDebitoAceptadas - $notasCreditoAceptadas;
 
         return max(0, $neto); // Asegurar que nunca sea negativo
     }
