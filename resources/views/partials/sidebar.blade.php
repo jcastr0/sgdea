@@ -256,6 +256,21 @@
                         <span x-show="!isCollapsed">Tenants</span>
                     </a>
                 </li>
+                <li>
+                    <a
+                        href="{{ route('admin.users.index') }}"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                            {{ request()->routeIs('admin.users.*')
+                                ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700' }}"
+                        x-tooltip="isCollapsed ? 'Usuarios' : null"
+                    >
+                        <svg class="h-5 w-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <span x-show="!isCollapsed">Usuarios</span>
+                    </a>
+                </li>
             </ul>
         </div>
         @endif

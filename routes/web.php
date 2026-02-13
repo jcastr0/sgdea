@@ -119,6 +119,17 @@ Route::middleware(['auth', 'is.superadmin.global'])->prefix('admin')->name('admi
     Route::post('/tenants/{id}/cambiar-estado', [\App\Http\Controllers\Admin\TenantController::class, 'cambiarEstado'])->name('tenants.cambiar-estado');
     Route::post('/tenants/{id}/cambiar-superadmin', [\App\Http\Controllers\Admin\TenantController::class, 'cambiarSuperadmin'])->name('tenants.cambiar-superadmin');
     Route::post('/tenants/{tenant}/toggle-status', [\App\Http\Controllers\Admin\TenantController::class, 'toggleStatus'])->name('tenants.toggle-status');
+
+    // Gestión Global de Usuarios
+    Route::get('/users', [\App\Http\Controllers\Admin\GlobalUserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [\App\Http\Controllers\Admin\GlobalUserController::class, 'create'])->name('users.create');
+    Route::post('/users', [\App\Http\Controllers\Admin\GlobalUserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}', [\App\Http\Controllers\Admin\GlobalUserController::class, 'show'])->name('users.show');
+    Route::get('/users/{user}/edit', [\App\Http\Controllers\Admin\GlobalUserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [\App\Http\Controllers\Admin\GlobalUserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [\App\Http\Controllers\Admin\GlobalUserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/{user}/toggle-status', [\App\Http\Controllers\Admin\GlobalUserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::post('/users/{user}/reset-password', [\App\Http\Controllers\Admin\GlobalUserController::class, 'resetPassword'])->name('users.reset-password');
 });
 
 // Ruta de Component Library (solo en desarrollo)
