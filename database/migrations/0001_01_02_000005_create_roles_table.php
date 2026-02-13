@@ -23,7 +23,8 @@ return new class extends Migration
                 ->comment('ID único del rol');
 
             $table->foreignId('tenant_id')
-                ->comment('FK al tenant dueño del rol')
+                ->nullable()
+                ->comment('FK al tenant dueño del rol. NULL = rol global del sistema')
                 ->constrained('tenants')
                 ->onDelete('cascade');
 

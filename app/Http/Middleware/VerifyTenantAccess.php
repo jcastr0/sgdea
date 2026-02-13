@@ -13,17 +13,18 @@ class VerifyTenantAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Si es admin global (guard system), permitir acceso total
-        if (auth()->guard('system')->check()) {
-            return $next($request);
-        }
-
-        // Si no está autenticado en ningún guard, redirigir a login
+        // Si no está autenticado, redirigir a login
         if (!auth()->check()) {
             return redirect()->route('login');
         }
 
         $user = auth()->user();
+
+        // Si es superadmin global (tenant_id = NULL y rol superadmin_global), permitir acceso total
+        if ($user->isSuperadminGlobal()) {
+            return $next($request);
+        }
+
         $currentTenantId = session('tenant_id');
 
         // Si no hay tenant_id en sesión, establecerlo desde el usuario

@@ -39,9 +39,9 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active')
                 ->comment('active=operativo, inactive=deshabilitado, suspended=suspendido por pago');
 
-            // ---- Administrador ----
-            $table->unsignedBigInteger('superadmin_id')->nullable()
-                ->comment('FK al system_user que administra este tenant');
+            // ---- Creador/Admin ----
+            $table->unsignedBigInteger('created_by')->nullable()
+                ->comment('FK al usuario que creó este tenant (superadmin global)');
 
             // ---- Branding/Logos ----
             $table->string('logo_path')->nullable()
@@ -61,13 +61,11 @@ return new class extends Migration
             // ---- Índices ----
             $table->index('domain', 'idx_tenants_domain');
             $table->index('status', 'idx_tenants_status');
-            $table->index('superadmin_id', 'idx_tenants_superadmin');
-
-            // ---- Foreign Keys ----
-            $table->foreign('superadmin_id')
-                ->references('id')->on('system_users')
-                ->onDelete('set null');
+            $table->index('created_by', 'idx_tenants_created_by');
         });
+
+        // Foreign key agregada después de crear tabla users
+        // Ver migración de users
     }
 
     public function down(): void

@@ -39,11 +39,19 @@ class Tenant extends Model
     }
 
     /**
-     * Relación: Un tenant pertenece a un SystemUser (superadmin)
+     * Relación: Un tenant tiene muchas facturas
      */
-    public function systemUser()
+    public function facturas()
     {
-        return $this->belongsTo(SystemUser::class, 'superadmin_id');
+        return $this->hasMany(Factura::class);
+    }
+
+    /**
+     * Relación: Usuario que creó este tenant (superadmin global)
+     */
+    public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**

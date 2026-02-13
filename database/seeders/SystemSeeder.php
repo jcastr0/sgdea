@@ -2,19 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\SystemUser;
 use App\Models\Tenant;
 use App\Models\ThemeConfiguration;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 /**
  * SystemSeeder
  *
  * Crea la configuración base del sistema:
- * - Superadministrador global
  * - Tenant de demostración
  * - Configuración de tema por defecto
+ *
+ * NOTA: El superadmin global se crea después con RoleSeeder y UserSeeder
  */
 class SystemSeeder extends Seeder
 {
@@ -23,20 +22,7 @@ class SystemSeeder extends Seeder
         $this->command->info('🔧 Configurando sistema base...');
 
         // ========================================
-        // 1. CREAR SUPERADMIN GLOBAL
-        // ========================================
-        $superadmin = SystemUser::updateOrCreate(
-            ['email' => 'superadmin@sgdea.com'],
-            [
-                'name' => 'Super Administrador',
-                'password' => Hash::make('SuperAdmin123!'),
-                'status' => 'active',
-            ]
-        );
-        $this->command->info('   ✅ Superadmin global creado: superadmin@sgdea.com');
-
-        // ========================================
-        // 2. CREAR TENANT DE DEMOSTRACIÓN
+        // 1. CREAR TENANT DE DEMOSTRACIÓN
         // ========================================
         $tenant = Tenant::updateOrCreate(
             ['slug' => 'demo'],
@@ -44,7 +30,6 @@ class SystemSeeder extends Seeder
                 'name' => 'Empresa Demo SGDEA',
                 'domain' => 'demo.sgdea.local',
                 'status' => 'active',
-                'superadmin_id' => $superadmin->id,
             ]
         );
         $this->command->info('   ✅ Tenant demo creado: ' . $tenant->name);

@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\SetupCheckpoint;
-use App\Models\SystemUser;
+use App\Models\User;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\ThemeConfiguration;
 use App\Services\SetupService;
@@ -392,13 +393,29 @@ class SetupController extends Controller
             // 2. EJECUTAR MIGRACIONES
             $this->executeMigrations($mysqlData);
 
-            // 3. CREAR SUPERADMIN GLOBAL EN BD (system_users)
-            // Este es el superadmin global que gestiona tenants
-            $superadminGlobal = SystemUser::create([
+            // 3. CREAR SUPERADMIN GLOBAL EN BD (tabla users con tenant_id=NULL)
+            // Primero obtener o crear el rol superadmin_global
+            $superadminRole = Role::where('slug', 'superadmin_global')->whereNull('tenant_id')->first();
+
+            if (!$superadminRole) {
+                $superadminRole = Role::create([
+                    'tenant_id' => null,
+                    'name' => 'Superadmin Global',
+                    'slug' => 'superadmin_global',
+                    'description' => 'Acceso total a todos los tenants',
+                    'is_system' => true,
+                    'priority' => 1000,
+                ]);
+            }
+
+            $superadminGlobal = User::create([
                 'email' => $superadminGlobalData['email'],
                 'name' => $superadminGlobalData['name'],
                 'password' => Hash::make($superadminGlobalData['password']),
-                'is_superadmin' => true,
+                'tenant_id' => null, // NULL = superadmin global
+                'role_id' => $superadminRole->id,
+                'status' => 'active',
+                'email_verified_at' => now(),
             ]);
 
             // 4. CREAR TENANT EN BD
@@ -408,7 +425,7 @@ class SetupController extends Controller
                 'domain' => $tenantAndThemeData['domain'],
                 'status' => 'active',
                 'database_name' => $mysqlData['database_name'] ?? null,
-                'superadmin_id' => null,
+                'created_by' => $superadminGlobal->id,
             ]);
 
             // 6. CREAR CONFIGURACIÓN DE TEMA (usar por defecto si no se proporciona)

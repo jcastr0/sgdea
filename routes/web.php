@@ -43,15 +43,6 @@ Route::get('/pending-approval', [\App\Http\Controllers\Auth\AuthController::clas
 
 Route::post('/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-// Rutas del Admin Global (Superadmin Global para gestionar tenants)
-Route::middleware('auth:system')->prefix('admin')->name('admin.')->group(function () {
-    // Dashboard del admin global
-    Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
-
-    // CRUD de Tenants
-    Route::resource('tenants', \App\Http\Controllers\Admin\TenantController::class);
-    Route::post('tenants/{tenant}/toggle-status', [\App\Http\Controllers\Admin\TenantController::class, 'toggleStatus'])->name('tenants.toggle-status');
-});
 
 // Rutas protegidas (requieren autenticación y verificación de tenant)
 Route::middleware(['auth', 'verify.tenant'])->group(function () {
@@ -114,9 +105,20 @@ Route::middleware(['auth', 'verify.tenant'])->group(function () {
 
 // Rutas de administración (solo superadmin global)
 Route::middleware(['auth', 'is.superadmin.global'])->prefix('admin')->name('admin.')->group(function () {
+    // Dashboard Admin
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // APIs del Dashboard
+    Route::get('/api/stats', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'getStats'])->name('api.stats');
+    Route::get('/api/alerts', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'getAlerts'])->name('api.alerts');
+    Route::get('/api/activity', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'getActivity'])->name('api.activity');
+    Route::get('/api/growth-trend', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'getGrowthTrend'])->name('api.growth-trend');
+
+    // Gestión de Tenants
     Route::resource('tenants', \App\Http\Controllers\Admin\TenantController::class);
     Route::post('/tenants/{id}/cambiar-estado', [\App\Http\Controllers\Admin\TenantController::class, 'cambiarEstado'])->name('tenants.cambiar-estado');
     Route::post('/tenants/{id}/cambiar-superadmin', [\App\Http\Controllers\Admin\TenantController::class, 'cambiarSuperadmin'])->name('tenants.cambiar-superadmin');
+    Route::post('/tenants/{tenant}/toggle-status', [\App\Http\Controllers\Admin\TenantController::class, 'toggleStatus'])->name('tenants.toggle-status');
 });
 
 // Ruta de Component Library (solo en desarrollo)

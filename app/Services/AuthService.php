@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\SystemUser;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -158,8 +157,13 @@ class AuthService
             ];
         }
 
-        // Verificar si el email es superadmin global
-        $isSuperAdmin = SystemUser::where('email', $email)->where('is_superadmin', true)->exists();
+        // Verificar si el email es de un superadmin global existente
+        $existingGlobalUser = User::where('email', $email)
+            ->whereNull('tenant_id')
+            ->whereHas('role', function($q) {
+                $q->where('slug', 'superadmin_global');
+            })
+            ->exists();
 
         // Crear usuario
         $user = User::create([
@@ -167,13 +171,13 @@ class AuthService
             'email' => $email,
             'password' => Hash::make($password),
             'tenant_id' => $tenant->id,
-            'status' => $isSuperAdmin ? 'active' : 'pending_approval',
+            'status' => $existingGlobalUser ? 'active' : 'pending_approval',
         ]);
 
         return [
             'success' => true,
             'user' => $user,
-            'is_superadmin' => $isSuperAdmin,
+            'is_superadmin' => $existingGlobalUser,
         ];
     }
 

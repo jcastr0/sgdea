@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware para rutas protegidas
         $middleware->alias([
             'verify.tenant' => \App\Http\Middleware\VerifyTenantAccess::class,
+            'is.superadmin.global' => \App\Http\Middleware\IsSuperadminGlobal::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -155,10 +155,25 @@ return new class extends Migration
             // ---- Constraints ----
             $table->unique(['user_id', 'role_id'], 'uniq_user_role');
         });
+
+        // =========================================
+        // FK DIFERIDA: tenants.created_by -> users.id
+        // Se agrega aquí porque tenants se crea antes que users
+        // =========================================
+        Schema::table('tenants', function (Blueprint $table) {
+            $table->foreign('created_by')
+                ->references('id')->on('users')
+                ->onDelete('set null');
+        });
     }
 
     public function down(): void
     {
+        // Eliminar FK de tenants primero
+        Schema::table('tenants', function (Blueprint $table) {
+            $table->dropForeign(['created_by']);
+        });
+
         Schema::dropIfExists('user_role');
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');

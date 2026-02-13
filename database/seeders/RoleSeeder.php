@@ -12,8 +12,11 @@ use Illuminate\Database\Seeder;
  *
  * Crea los roles base del sistema y asigna permisos.
  *
- * Roles por defecto:
- * - Administrador: Todos los permisos
+ * Roles globales (tenant_id = NULL):
+ * - Superadmin Global: Acceso total a todos los tenants
+ *
+ * Roles por tenant:
+ * - Administrador: Todos los permisos del tenant
  * - Supervisor: Permisos de gestión sin eliminar
  * - Operador: Permisos básicos de operación
  * - Consultor: Solo lectura
@@ -21,7 +24,22 @@ use Illuminate\Database\Seeder;
 class RoleSeeder extends Seeder
 {
     /**
-     * Definición de roles y sus permisos
+     * Rol global del sistema (tenant_id = NULL)
+     */
+    private array $globalRoles = [
+        [
+            'name' => 'Superadmin Global',
+            'slug' => 'superadmin_global',
+            'description' => 'Acceso total a todos los tenants y funciones administrativas del sistema',
+            'is_system' => true,
+            'is_default' => false,
+            'priority' => 1000,
+            'permissions' => '*', // Todos los permisos
+        ],
+    ];
+
+    /**
+     * Definición de roles por tenant y sus permisos
      */
     private array $roles = [
         [
@@ -93,16 +111,48 @@ class RoleSeeder extends Seeder
     {
         $this->command->info('👥 Creando roles del sistema...');
 
+        // Obtener todos los permisos
+        $allPermissions = Permission::all();
+
+        // =========================================
+        // 1. CREAR ROLES GLOBALES (tenant_id = NULL)
+        // =========================================
+        $this->command->info('   📌 Creando roles globales...');
+
+        foreach ($this->globalRoles as $roleData) {
+            $role = Role::updateOrCreate(
+                [
+                    'tenant_id' => null,
+                    'slug' => $roleData['slug'],
+                ],
+                [
+                    'name' => $roleData['name'],
+                    'description' => $roleData['description'],
+                    'is_system' => $roleData['is_system'],
+                    'is_default' => $roleData['is_default'],
+                    'priority' => $roleData['priority'],
+                ]
+            );
+
+            // Asignar todos los permisos al superadmin global
+            if ($roleData['permissions'] === '*') {
+                $role->permissions()->sync($allPermissions->pluck('id'));
+                $this->command->info("   ✅ Rol GLOBAL '{$role->name}' (ID: {$role->id}) creado con TODOS los permisos");
+            }
+        }
+
+        // =========================================
+        // 2. CREAR ROLES POR TENANT
+        // =========================================
         // Obtener el tenant demo
         $tenant = Tenant::where('slug', 'demo')->first();
 
         if (!$tenant) {
-            $this->command->error('   ❌ No se encontró el tenant demo. Ejecute SystemSeeder primero.');
+            $this->command->warn('   ⚠️ No se encontró tenant demo. Solo se crearon roles globales.');
             return;
         }
 
-        // Obtener todos los permisos
-        $allPermissions = Permission::all();
+        $this->command->info('   📌 Creando roles para tenant: ' . $tenant->name);
 
         foreach ($this->roles as $roleData) {
             // Crear o actualizar el rol

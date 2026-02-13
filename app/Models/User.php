@@ -65,6 +65,7 @@ class User extends Authenticatable
         'company_id',
         'estado',
         'tenant_id',
+        'role_id',
     ];
 
     /**
@@ -219,10 +220,17 @@ class User extends Authenticatable
 
     /**
      * Verifica si el usuario es superadmin global
+     *
+     * Un superadmin global es un usuario con:
+     * - tenant_id = NULL (no pertenece a ningún tenant)
+     * - role.slug = 'superadmin_global'
      */
     public function isSuperadminGlobal(): bool
     {
-        return $this->role && $this->role->slug === 'superadmin_global';
+        // Debe no tener tenant y tener rol superadmin_global
+        return $this->tenant_id === null
+            && $this->role
+            && $this->role->slug === 'superadmin_global';
     }
 
     /**

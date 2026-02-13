@@ -46,6 +46,11 @@ class AuthController extends Controller
 
     /**
      * Procesar login
+     *
+     * Flujo simplificado:
+     * 1. Buscar usuario por email en tabla users
+     * 2. Si tiene tenant_id=NULL y rol superadmin_global -> es admin global
+     * 3. Si tiene tenant_id -> es usuario de tenant
      */
     public function login(Request $request)
     {
@@ -55,55 +60,46 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        // 1. PRIMERO: Verificar si es admin global (SystemUser)
-        $systemUser = \App\Models\SystemUser::where('email', $request->email)->first();
+        // Buscar usuario por email (todos están en tabla users)
+        $user = User::where('email', $request->email)->first();
 
-        if ($systemUser) {
-            // Verificar contraseña del admin global
-            if (Hash::check($request->password, $systemUser->password)) {
-                // Login exitoso como admin global
-                Auth::guard('system')->login($systemUser, $request->remember ?? false);
-
-                // Redirigir al panel del admin global
-                return redirect()->route('admin.dashboard');
-            } else {
-                // Contraseña incorrecta
-                return redirect()->back()->withErrors(['email' => 'Credenciales inválidas']);
-            }
+        if (!$user) {
+            return redirect()->back()->withErrors(['email' => 'Credenciales inválidas']);
         }
 
-        // 2. SI NO ES ADMIN GLOBAL: Intentar login en tenant
-        $tenant = $this->authService->detectTenant();
-
-        if (!$tenant) {
-            return redirect()->back()->with('error', 'Empresa no encontrada');
+        // Verificar contraseña
+        if (!Hash::check($request->password, $user->password)) {
+            return redirect()->back()->withErrors(['email' => 'Credenciales inválidas']);
         }
 
-        // Validar credenciales en el contexto del tenant
-        $result = $this->authService->validateLogin(
-            $request->email,
-            $request->password,
-            $tenant
-        );
-
-        if (!$result['success']) {
-            if ($result['pending_approval'] ?? false) {
-                return redirect()->route('pending-approval');
-            }
-            return redirect()->back()->withErrors(['email' => $result['message']]);
+        // Verificar estado del usuario
+        if ($user->status === 'inactive' || $user->status === 'blocked') {
+            return redirect()->back()->withErrors(['email' => 'Tu cuenta está deshabilitada']);
         }
 
-        // Login exitoso en tenant
-        $user = $result['user'];
+        if ($user->status === 'pending_approval') {
+            return redirect()->route('pending-approval');
+        }
 
-        // Registrar login
-        $this->authService->recordLogin($user);
-
-        // Autenticar usuario
+        // Login exitoso
         Auth::login($user, $request->remember ?? false);
 
-        // Guardar tenant_id en sesión
-        session(['tenant_id' => $tenant->id, 'tenant' => $tenant]);
+        // Registrar login
+        $user->update([
+            'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
+        ]);
+
+        // Si es superadmin global (tenant_id = NULL y rol superadmin_global)
+        if ($user->isSuperadminGlobal()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        // Usuario de tenant - guardar en sesión
+        if ($user->tenant_id) {
+            $tenant = Tenant::find($user->tenant_id);
+            session(['tenant_id' => $user->tenant_id, 'tenant' => $tenant]);
+        }
 
         return redirect()->intended(route('dashboard'));
     }
