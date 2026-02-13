@@ -1,4 +1,13 @@
-<div class="max-w-4xl mx-auto">
+<div class="max-w-4xl mx-auto" wire:loading.class="opacity-75 pointer-events-none" wire:target="nextStep,prevStep,createTenant,goToStep">
+    {{-- Indicador de carga global --}}
+    <div wire:loading wire:target="nextStep,prevStep,createTenant,goToStep" class="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-lg">
+        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="font-medium">Procesando...</span>
+    </div>
+
     {{-- Header --}}
     <div class="mb-8">
         <a href="{{ route('admin.tenants.index') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer mb-4">
@@ -310,6 +319,70 @@
                     </div>
                 </div>
 
+                {{-- Logo del Tenant --}}
+                <div class="p-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Logo de la Empresa (Opcional)
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {{-- Opción 1: Subir archivo --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Subir imagen</label>
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-20 h-20 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 dark:border-slate-600">
+                                    @if($logo)
+                                        <img src="{{ $logo->temporaryUrl() }}" alt="Logo Preview" class="max-w-full max-h-full object-contain">
+                                    @elseif($svg_logo)
+                                        <div class="w-full h-full flex items-center justify-center p-2">
+                                            {!! $svg_logo !!}
+                                        </div>
+                                    @else
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    @endif
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" wire:model="logo" accept="image/*,.svg"
+                                        class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 file:cursor-pointer">
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">PNG, JPG o SVG. Máx 2MB.</p>
+                                    @if($logo)
+                                        <button type="button" wire:click="$set('logo', null)"
+                                            class="mt-2 text-xs text-red-600 hover:text-red-700 dark:text-red-400 cursor-pointer">
+                                            Eliminar
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                            @error('logo')
+                                <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        {{-- Opción 2: Pegar SVG --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">O pegar código SVG</label>
+                            <textarea wire:model.live.debounce.500ms="svg_logo" rows="4" placeholder="<svg>...</svg>"
+                                class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-xs font-mono"
+                            ></textarea>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Pegue el código SVG directamente aquí.</p>
+                            @if($svg_logo)
+                                <button type="button" wire:click="$set('svg_logo', '')"
+                                    class="mt-2 text-xs text-red-600 hover:text-red-700 dark:text-red-400 cursor-pointer">
+                                    Limpiar SVG
+                                </button>
+                            @endif
+                            @error('svg_logo')
+                                <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Toggle Modo Oscuro --}}
                 <div class="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
                     <div>
@@ -550,12 +623,19 @@
     {{-- Navigation Buttons --}}
     <div class="flex items-center justify-between mt-8">
         @if($currentStep > 1)
-            <button type="button" wire:click="prevStep"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button type="button" wire:click="prevStep" wire:loading.attr="disabled" wire:target="prevStep,nextStep,createTenant"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                <span wire:loading wire:target="prevStep">
+                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+                <svg wire:loading.remove wire:target="prevStep" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
-                Anterior
+                <span wire:loading wire:target="prevStep">Procesando...</span>
+                <span wire:loading.remove wire:target="prevStep">Anterior</span>
             </button>
         @else
             <div></div>
@@ -568,10 +648,17 @@
             </a>
 
             @if($currentStep < $totalSteps)
-                <button type="button" wire:click="nextStep"
-                    class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer">
-                    Siguiente
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="button" wire:click="nextStep" wire:loading.attr="disabled" wire:target="prevStep,nextStep,createTenant"
+                    class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:cursor-not-allowed">
+                    <span wire:loading wire:target="nextStep">Procesando...</span>
+                    <span wire:loading.remove wire:target="nextStep">Siguiente</span>
+                    <span wire:loading wire:target="nextStep">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                    <svg wire:loading.remove wire:target="nextStep" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </button>

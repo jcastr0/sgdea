@@ -25,8 +25,20 @@
     {{-- Estilos compilados --}}
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
-    {{-- Variables CSS del tenant --}}
-    @if(isset($tenant))
+    {{-- Variables CSS del tenant/tema --}}
+    @if(isset($themeConfig))
+    <style>
+        :root {
+            --tenant-primary: {{ $themeConfig->color_primary ?? '#2563eb' }};
+            --tenant-primary-hover: {{ $themeConfig->color_secondary ?? '#1d4ed8' }};
+            --tenant-secondary: {{ $themeConfig->color_secondary ?? '#475569' }};
+            --tenant-accent: {{ $themeConfig->color_accent ?? '#10b981' }};
+            --tenant-error: {{ $themeConfig->color_error ?? '#ef4444' }};
+            --tenant-success: {{ $themeConfig->color_success ?? '#22c55e' }};
+            --tenant-warning: {{ $themeConfig->color_warning ?? '#f59e0b' }};
+        }
+    </style>
+    @elseif(isset($tenant))
     <style>
         :root {
             --tenant-primary: {{ $tenant->primary_color ?? '#2563eb' }};

@@ -166,7 +166,7 @@
             </ul>
         </div>
 
-        {{-- Sección: Administración --}}
+        {{-- Sección: Administración
         <div class="mb-6">
             <h4
                 x-show="!isCollapsed"
@@ -215,7 +215,7 @@
                 @endif
             </ul>
         </div>
-
+        --}}
         {{-- Sección: Superadmin Global (solo para superadmins) --}}
         @if(auth()->user() && auth()->user()->role && auth()->user()->role->slug === 'superadmin_global')
         <div class="mb-6">
@@ -276,21 +276,38 @@
         @endif
     </nav>
 
-    {{-- User info en el footer del sidebar --}}
+    {{-- Tenant/User info en el footer del sidebar --}}
     <div class="border-t border-gray-200 dark:border-slate-700 p-4">
         <div class="flex items-center gap-3">
             <div class="flex-shrink-0">
-                <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                    {{ substr(Auth::user()->name ?? 'U', 0, 1) }}
-                </div>
+                @if(isset($tenant) && $tenant->logo_path)
+                    <img src="{{ asset($tenant->logo_path) }}" alt="{{ $tenant->name }}" class="h-10 w-10 rounded-full object-cover">
+                @elseif(isset($tenant))
+                    <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                        {{ substr($tenant->name ?? 'T', 0, 1) }}
+                    </div>
+                @else
+                    <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                        {{ substr(Auth::user()->name ?? 'U', 0, 1) }}
+                    </div>
+                @endif
             </div>
             <div x-show="!isCollapsed" class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {{ Auth::user()->name ?? 'Usuario' }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {{ Auth::user()->email ?? '' }}
-                </p>
+                @if(isset($tenant))
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {{ $tenant->name ?? 'Tenant' }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {{ $tenant->domain ?? '' }}
+                    </p>
+                @else
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {{ Auth::user()->name ?? 'Usuario' }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {{ Auth::user()->email ?? '' }}
+                    </p>
+                @endif
             </div>
         </div>
     </div>

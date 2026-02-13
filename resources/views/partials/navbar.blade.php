@@ -131,7 +131,7 @@
             <div x-data="dropdown()" class="relative">
                 <button
                     @click="toggle()"
-                    class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                    class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 >
                     <div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
                         {{ substr(Auth::user()->name ?? 'U', 0, 1) }}

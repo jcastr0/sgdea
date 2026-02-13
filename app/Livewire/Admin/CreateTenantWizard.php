@@ -53,6 +53,7 @@ class CreateTenantWizard extends Component
     public string $color_accent = '#10b981';
     public bool $dark_mode_enabled = true;
     public $logo = null;
+    public string $svg_logo = '';
 
     // ===========================
     // PASO 4: USUARIO ADMIN
@@ -130,6 +131,7 @@ class CreateTenantWizard extends Component
             'color_accent' => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
             'dark_mode_enabled' => 'boolean',
             'logo' => 'nullable|image|max:2048',
+            'svg_logo' => 'nullable|string|max:65535',
             // Paso 4
             'admin_name' => 'required|string|max:255',
             'admin_email' => 'required|email|unique:users,email',
@@ -300,7 +302,20 @@ class CreateTenantWizard extends Component
             // Subir logo si existe (después de crear el tenant)
             if ($this->logo && $result['tenant']) {
                 $logoPath = $this->logo->store("tenants/{$result['tenant']->id}/branding", 'public');
-                $result['tenant']->update(['logo_path' => $logoPath]);
+                $result['tenant']->update(['logo_path' => 'storage/' . $logoPath]);
+            } elseif (!empty($this->svg_logo) && $result['tenant']) {
+                // Guardar SVG como archivo
+                $svgContent = $this->svg_logo;
+                // Sanitizar SVG - asegurar que sea un SVG válido
+                if (preg_match('/<svg[^>]*>.*<\/svg>/is', $svgContent)) {
+                    $directory = storage_path("app/public/tenants/{$result['tenant']->id}/branding");
+                    if (!file_exists($directory)) {
+                        mkdir($directory, 0755, true);
+                    }
+                    $svgPath = "tenants/{$result['tenant']->id}/branding/logo.svg";
+                    file_put_contents(storage_path("app/public/{$svgPath}"), $svgContent);
+                    $result['tenant']->update(['logo_path' => 'storage/' . $svgPath]);
+                }
             }
 
             // Guardar datos para mostrar en modal
