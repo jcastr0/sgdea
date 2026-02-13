@@ -15,12 +15,47 @@ class Tenant extends Model
         'domain',
         'database_name',
         'status',
+        'plan',
+        'max_users',
+        'max_storage',
+        'primary_color',
+        'secondary_color',
         'superadmin_id',
+        'created_by',
         'logo_path',
         'logo_path_light',
         'logo_path_dark',
         'favicon_path',
     ];
+
+    /**
+     * Obtener el color primario del tenant (con fallback)
+     */
+    public function getPrimaryColor(): string
+    {
+        return $this->primary_color ?? '#1a56db';
+    }
+
+    /**
+     * Obtener el color secundario/oscuro del tenant (con fallback)
+     */
+    public function getSecondaryColor(): string
+    {
+        return $this->secondary_color ?? '#1e3a5f';
+    }
+
+    /**
+     * Obtener el nombre del plan para mostrar
+     */
+    public function getPlanName(): string
+    {
+        return match($this->plan) {
+            'basic' => 'Básico',
+            'professional' => 'Profesional',
+            'enterprise' => 'Empresarial',
+            default => 'Profesional',
+        };
+    }
 
     /**
      * Relación: Un tenant tiene una configuración de tema

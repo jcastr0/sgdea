@@ -35,12 +35,18 @@ class AuthController extends Controller
         $logoLight = $this->authService->getTenantLogo($tenant, false); // Logo para modo claro (con colores)
         $logoDark = $this->authService->getTenantLogo($tenant, true);   // Logo para modo oscuro (blanco)
 
+        // Colores del tenant para inyectar en CSS variables
+        $tenantPrimaryColor = $tenant->primary_color ?? '#1a56db';
+        $tenantSecondaryColor = $tenant->secondary_color ?? '#1e3a5f';
+
         return view('auth.login', [
             'tenant' => $tenant,
             'theme' => $theme,
             'logo' => $logoLight,
             'logoLight' => $logoLight,
             'logoDark' => $logoDark,
+            'tenantPrimaryColor' => $tenantPrimaryColor,
+            'tenantSecondaryColor' => $tenantSecondaryColor,
         ]);
     }
 

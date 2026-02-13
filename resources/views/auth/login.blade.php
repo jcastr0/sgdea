@@ -24,9 +24,11 @@
 
     <style>
         :root {
-            --color-primary: {{ $theme->color_primary ?? '#2563eb' }};
-            --color-primary-dark: {{ $theme->color_primary_dark ?? '#1d4ed8' }};
-            --color-secondary: {{ $theme->color_secondary ?? '#0f172a' }};
+            --color-primary: {{ $tenantPrimaryColor ?? '#1a56db' }};
+            --color-primary-dark: {{ $theme->color_primary_dark ?? '#1657c2' }};
+            --color-secondary: {{ $tenantSecondaryColor ?? '#1e3a5f' }};
+            --tenant-primary: {{ $tenantPrimaryColor ?? '#1a56db' }};
+            --tenant-secondary: {{ $tenantSecondaryColor ?? '#1e3a5f' }};
         }
 
         * {
@@ -211,25 +213,35 @@
              :class="{ 'shake': hasError }"
              x-init="setTimeout(() => hasError = false, 500)">
 
-            {{-- Logo del Sistema (siempre el mismo, independiente del tenant) --}}
+            {{-- Logo del Tenant o Sistema --}}
             <div class="text-center mb-8 opacity-0 fade-in-up delay-100" style="animation-fill-mode: forwards;">
                 <div class="flex justify-center mb-4">
                     <div class="transition-transform duration-300 hover:scale-105">
-                        {{-- Logo para modo claro (con colores) - Logo del sistema --}}
-                        <img src="{{ asset('images/logo-dark.svg') }}"
-                             alt="SGDEA"
-                             class="h-20 w-auto object-contain dark:hidden">
-                        {{-- Logo para modo oscuro (blanco) - Logo del sistema --}}
-                        <img src="{{ asset('images/logo-light.svg') }}"
-                             alt="SGDEA"
-                             class="h-20 w-auto object-contain hidden dark:block">
+                        @if(isset($tenant) && $tenant->logo_path)
+                            {{-- Logo del tenant si existe --}}
+                            <img src="{{ asset('storage/' . $tenant->logo_path) }}"
+                                 alt="{{ $tenant->name ?? 'SGDEA' }}"
+                                 class="h-20 w-auto object-contain dark:hidden">
+                            {{-- Logo para modo oscuro: usar logo_path_light si existe, si no el mismo logo --}}
+                            <img src="{{ asset('storage/' . ($tenant->logo_path_light ?? $tenant->logo_path)) }}"
+                                 alt="{{ $tenant->name ?? 'SGDEA' }}"
+                                 class="h-20 w-auto object-contain hidden dark:block">
+                        @else
+                            {{-- Logo del sistema por defecto --}}
+                            <img src="{{ asset('images/logo-dark.svg') }}"
+                                 alt="SGDEA"
+                                 class="h-20 w-auto object-contain dark:hidden">
+                            <img src="{{ asset('images/logo-light.svg') }}"
+                                 alt="SGDEA"
+                                 class="h-20 w-auto object-contain hidden dark:block">
+                        @endif
                     </div>
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                    SGDEA
+                    {{ $tenant->name ?? 'SGDEA' }}
                 </h1>
                 <p class="text-gray-500 dark:text-gray-400 text-sm">
-                    Sistema de Gestión Documental y Electrónica
+                    {{ $tenant->description ?? 'Sistema de Gestión Documental y Electrónica' }}
                 </p>
                 <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
                     Ingresa tus credenciales para continuar

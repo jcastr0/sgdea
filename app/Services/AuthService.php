@@ -34,10 +34,35 @@ class AuthService
 
     /**
      * Obtener tema del tenant
+     * Devuelve un objeto con los colores directamente de la tabla tenants
      */
     public function getTenantTheme(Tenant $tenant)
     {
-        return $tenant->themeConfiguration ?? null;
+        // Los colores se obtienen directamente de la tabla tenants
+        // NO de themeConfiguration ni de tenant_settings
+        return (object) [
+            'color_primary' => $tenant->primary_color ?? '#1a56db',
+            'color_primary_dark' => $this->darkenColor($tenant->primary_color ?? '#1a56db', 15),
+            'color_secondary' => $tenant->secondary_color ?? '#1e3a5f',
+        ];
+    }
+
+    /**
+     * Oscurecer un color hexadecimal
+     */
+    private function darkenColor(string $hex, int $percent): string
+    {
+        $hex = ltrim($hex, '#');
+
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        $r = max(0, $r - ($r * $percent / 100));
+        $g = max(0, $g - ($g * $percent / 100));
+        $b = max(0, $b - ($b * $percent / 100));
+
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
     }
 
     /**

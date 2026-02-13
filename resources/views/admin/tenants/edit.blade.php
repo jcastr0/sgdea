@@ -19,7 +19,7 @@
         </div>
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                 style="background: linear-gradient(135deg, {{ $tenant->themeConfiguration->color_primary ?? '#2563eb' }}, {{ $tenant->themeConfiguration->color_secondary ?? '#0f172a' }})">
+                 style="background: linear-gradient(135deg, {{ $tenant->primary_color ?? '#1a56db' }}, {{ $tenant->secondary_color ?? '#1e3a5f' }})">
                 {{ strtoupper(substr($tenant->name, 0, 2)) }}
             </div>
             <div>
@@ -243,12 +243,31 @@
 
     {{-- Tab: Branding --}}
     <div x-show="activeTab === 'branding'" x-cloak x-data="{
-        colorPrimary: '{{ $tenant->themeConfiguration->color_primary ?? '#2563eb' }}',
-        colorSecondary: '{{ $tenant->themeConfiguration->color_secondary ?? '#0f172a' }}',
-        colorAccent: '{{ $tenant->themeConfiguration->color_accent ?? '#10b981' }}',
-        darkModeEnabled: {{ ($tenant->themeConfiguration->dark_mode_enabled ?? true) ? 'true' : 'false' }}
+        primaryColor: '{{ $tenant->primary_color ?? '#1a56db' }}',
+        secondaryColor: '{{ $tenant->secondary_color ?? '#1e3a5f' }}',
+        logoType: 'file',
+        logoPreview: '{{ $tenant->logo_path ? asset('storage/' . $tenant->logo_path) : '' }}',
+        svgCode: '',
+        isSubmitting: false,
+
+        handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.logoPreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        updateSvgPreview() {
+            if (this.svgCode && this.svgCode.trim().startsWith('<svg')) {
+                this.logoPreview = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(this.svgCode)));
+            }
+        }
     }">
-        <form action="{{ route('admin.tenants.update', $tenant) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+        <form action="{{ route('admin.tenants.update', $tenant) }}" method="POST" enctype="multipart/form-data" class="space-y-6" @submit="isSubmitting = true">
             @csrf
             @method('PUT')
             <input type="hidden" name="tab" value="branding">
@@ -257,85 +276,195 @@
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Branding y Colores</h2>
 
                 <div class="space-y-6">
+                    {{-- Logo Section --}}
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Logo de la Empresa</label>
+
+                        {{-- Current Logo --}}
+                        <div class="flex items-center gap-4">
+                            <div class="w-20 h-20 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+                                <template x-if="logoPreview">
+                                    <img :src="logoPreview" alt="Logo preview" class="max-w-full max-h-full object-contain">
+                                </template>
+                                <template x-if="!logoPreview">
+                                    <div class="text-2xl font-bold text-gray-400">{{ strtoupper(substr($tenant->name, 0, 2)) }}</div>
+                                </template>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    @if($tenant->logo_path)
+                                        Logo actual: {{ basename($tenant->logo_path) }}
+                                    @else
+                                        Sin logo configurado
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- Logo Upload Type --}}
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="logo_upload_type" value="file" x-model="logoType" class="text-blue-600">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">Subir archivo</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="logo_upload_type" value="svg" x-model="logoType" class="text-blue-600">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">Pegar código SVG</span>
+                            </label>
+                        </div>
+
+                        {{-- File Upload --}}
+                        <div x-show="logoType === 'file'" class="space-y-2">
+                            <input type="file" name="logo_file" accept=".png,.jpg,.jpeg,.svg" @change="handleFileUpload($event)"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 cursor-pointer">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Formatos: PNG, JPG, SVG. Tamaño máximo: 2MB</p>
+                        </div>
+
+                        {{-- SVG Code --}}
+                        <div x-show="logoType === 'svg'" class="space-y-2">
+                            <textarea name="logo_svg" rows="4" x-model="svgCode" @input="updateSvgPreview()"
+                                      placeholder='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">...</svg>'
+                                      class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Pega el código SVG completo (debe comenzar con &lt;svg)</p>
+                        </div>
+                    </div>
+
                     {{-- Colores --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-slate-700">
                         <div>
-                            <label for="color_primary" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label for="primary_color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Color Primario
+                                <span class="text-xs text-gray-400 ml-1">(Botones, enlaces activos)</span>
                             </label>
                             <div class="flex items-center gap-3">
-                                <input type="color" id="color_primary" name="color_primary" x-model="colorPrimary"
+                                <input type="color" id="primary_color" name="primary_color" x-model="primaryColor"
                                        class="w-12 h-12 rounded-lg border border-gray-300 dark:border-slate-600 cursor-pointer">
-                                <input type="text" x-model="colorPrimary"
+                                <input type="text" x-model="primaryColor"
                                        class="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors uppercase font-mono"
                                        maxlength="7">
                             </div>
                         </div>
                         <div>
-                            <label for="color_secondary" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label for="secondary_color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Color Secundario
+                                <span class="text-xs text-gray-400 ml-1">(Fondo sidebar modo oscuro)</span>
                             </label>
                             <div class="flex items-center gap-3">
-                                <input type="color" id="color_secondary" name="color_secondary" x-model="colorSecondary"
+                                <input type="color" id="secondary_color" name="secondary_color" x-model="secondaryColor"
                                        class="w-12 h-12 rounded-lg border border-gray-300 dark:border-slate-600 cursor-pointer">
-                                <input type="text" x-model="colorSecondary"
-                                       class="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors uppercase font-mono"
-                                       maxlength="7">
-                            </div>
-                        </div>
-                        <div>
-                            <label for="color_accent" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Color de Acento
-                            </label>
-                            <div class="flex items-center gap-3">
-                                <input type="color" id="color_accent" name="color_accent" x-model="colorAccent"
-                                       class="w-12 h-12 rounded-lg border border-gray-300 dark:border-slate-600 cursor-pointer">
-                                <input type="text" x-model="colorAccent"
+                                <input type="text" x-model="secondaryColor"
                                        class="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors uppercase font-mono"
                                        maxlength="7">
                             </div>
                         </div>
                     </div>
 
-                    {{-- Preview --}}
+                    {{-- Preview de Sidebar --}}
+                    <div class="pt-4 border-t border-gray-200 dark:border-slate-700">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Vista previa del Sidebar</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {{-- Sidebar Light --}}
+                            <div class="rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 shadow-sm">
+                                <div class="px-3 py-2 bg-gray-100 border-b border-gray-200">
+                                    <span class="text-xs font-medium text-gray-500">Modo Claro</span>
+                                </div>
+                                <div class="w-full h-48 bg-white p-3">
+                                    {{-- Logo area --}}
+                                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden" :style="{ backgroundColor: primaryColor + '15' }">
+                                            <template x-if="logoPreview">
+                                                <img :src="logoPreview" alt="Logo" class="w-6 h-6 object-contain">
+                                            </template>
+                                            <template x-if="!logoPreview">
+                                                <span class="text-xs font-bold" :style="{ color: primaryColor }">{{ strtoupper(substr($tenant->name, 0, 2)) }}</span>
+                                            </template>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-800 truncate">{{ $tenant->name }}</span>
+                                    </div>
+                                    {{-- Menu items --}}
+                                    <div class="space-y-1">
+                                        <div class="px-3 py-2 rounded-lg text-white text-xs" :style="{ backgroundColor: primaryColor }">
+                                            Dashboard (Activo)
+                                        </div>
+                                        <div class="px-3 py-2 rounded-lg text-gray-600 text-xs hover:bg-gray-100">
+                                            Facturas
+                                        </div>
+                                        <div class="px-3 py-2 rounded-lg text-gray-600 text-xs hover:bg-gray-100">
+                                            Terceros
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Sidebar Dark --}}
+                            <div class="rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 shadow-sm">
+                                <div class="px-3 py-2 bg-gray-800 border-b border-gray-700">
+                                    <span class="text-xs font-medium text-gray-400">Modo Oscuro</span>
+                                </div>
+                                <div class="w-full h-48 p-3" :style="{ backgroundColor: secondaryColor }">
+                                    {{-- Logo area --}}
+                                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden bg-white/10">
+                                            <template x-if="logoPreview">
+                                                <img :src="logoPreview" alt="Logo" class="w-6 h-6 object-contain">
+                                            </template>
+                                            <template x-if="!logoPreview">
+                                                <span class="text-xs font-bold text-white">{{ strtoupper(substr($tenant->name, 0, 2)) }}</span>
+                                            </template>
+                                        </div>
+                                        <span class="text-sm font-medium text-white truncate">{{ $tenant->name }}</span>
+                                    </div>
+                                    {{-- Menu items --}}
+                                    <div class="space-y-1">
+                                        <div class="px-3 py-2 rounded-lg text-white text-xs" :style="{ backgroundColor: primaryColor }">
+                                            Dashboard (Activo)
+                                        </div>
+                                        <div class="px-3 py-2 rounded-lg text-white/70 text-xs">
+                                            Facturas
+                                        </div>
+                                        <div class="px-3 py-2 rounded-lg text-white/70 text-xs">
+                                            Terceros
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Preview de Botones --}}
                     <div class="p-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Vista previa</p>
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Vista previa de elementos</p>
                         <div class="flex flex-wrap gap-4">
-                            <button type="button" class="px-4 py-2 rounded-lg text-white font-medium" :style="{ backgroundColor: colorPrimary }">
-                                Primario
+                            <button type="button" class="px-4 py-2 rounded-lg text-white font-medium" :style="{ backgroundColor: primaryColor }">
+                                Botón Primario
                             </button>
-                            <button type="button" class="px-4 py-2 rounded-lg text-white font-medium" :style="{ backgroundColor: colorSecondary }">
-                                Secundario
+                            <button type="button" class="px-4 py-2 rounded-lg text-white font-medium" :style="{ backgroundColor: secondaryColor }">
+                                Botón Secundario
                             </button>
-                            <button type="button" class="px-4 py-2 rounded-lg text-white font-medium" :style="{ backgroundColor: colorAccent }">
-                                Acento
-                            </button>
+                            <span class="px-3 py-2 rounded-lg text-sm font-medium" :style="{ backgroundColor: primaryColor + '20', color: primaryColor }">
+                                Badge
+                            </span>
                         </div>
-                    </div>
-
-                    {{-- Dark Mode Toggle --}}
-                    <div class="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">Permitir modo oscuro</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Los usuarios podrán cambiar entre tema claro y oscuro</p>
-                        </div>
-                        <input type="hidden" name="dark_mode_enabled" value="0">
-                        <button type="button" @click="darkModeEnabled = !darkModeEnabled"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
-                                :class="darkModeEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-slate-600'">
-                            <input type="checkbox" name="dark_mode_enabled" value="1" class="sr-only" :checked="darkModeEnabled">
-                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                                  :class="darkModeEnabled ? 'translate-x-6' : 'translate-x-1'"></span>
-                        </button>
                     </div>
                 </div>
 
                 <div class="mt-6 flex items-center gap-3">
-                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Guardar Cambios
+                    <button type="submit"
+                            :disabled="isSubmitting"
+                            :class="isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'"
+                            class="inline-flex items-center gap-2 px-6 py-3 text-white rounded-lg font-medium transition-colors">
+                        <template x-if="!isSubmitting">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </template>
+                        <template x-if="isSubmitting">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </template>
+                        <span x-text="isSubmitting ? 'Guardando...' : 'Guardar Cambios'"></span>
                     </button>
                 </div>
             </div>

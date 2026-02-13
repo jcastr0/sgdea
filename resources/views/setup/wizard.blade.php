@@ -386,6 +386,79 @@
             cursor: not-allowed;
         }
 
+        .btn.loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            top: 50%;
+            left: 50%;
+            margin-left: -9px;
+            margin-top: -9px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-secondary.loading::after {
+            border-top-color: #1F2933;
+        }
+
+        /* Indicador de procesamiento visible */
+        .processing-indicator {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .processing-indicator.show {
+            display: flex;
+        }
+
+        .processing-content {
+            background: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .processing-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #E4E7EB;
+            border-top: 4px solid #2767C6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .processing-text {
+            font-size: 16px;
+            color: #1F2933;
+            font-weight: 600;
+        }
+
+        .processing-subtext {
+            font-size: 13px;
+            color: #6B7280;
+            margin-top: 8px;
+        }
+
         .setup-complete {
             text-align: center;
             padding: 50px 0;
@@ -717,6 +790,15 @@
     </style>
 </head>
 <body>
+    <!-- INDICADOR DE PROCESAMIENTO GLOBAL -->
+    <div class="processing-indicator" id="processingIndicator">
+        <div class="processing-content">
+            <div class="processing-spinner"></div>
+            <div class="processing-text" id="processingText">Procesando...</div>
+            <div class="processing-subtext" id="processingSubtext">Por favor espera mientras se completa la operación</div>
+        </div>
+    </div>
+
     <!-- BOTÓN MOBILE PARA ABRIR MENÚ -->
     <button class="mobile-menu-toggle" id="mobileMenuToggle">☰ Pasos</button>
 
@@ -971,29 +1053,114 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="logo_file">Logo de Empresa (Opcional, PNG/SVG)</label>
-                                <input type="file" id="logo_file" name="logo_file" accept="image/png, image/svg+xml">
-                                <div class="form-hint">Opcional: sube tu logo (recomendado PNG/SVG, max 500KB)</div>
+                                <label for="color_primary_dark">Color Oscuro (Sidebar)</label>
+                                <input type="color" id="color_primary_dark" name="color_primary_dark" value="#0F3F5F">
+                                <div class="form-hint">Color para el sidebar y elementos oscuros</div>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group form-group-full">
-                                <label for="color_preview">Vista previa</label>
-                                <div id="color_preview" style="height:40px; border-radius:6px; background:#2767C6; border:1px solid #D4D9E2;"></div>
-                                <script>
-                                    (function(){
-                                        const colorInput = document.getElementById('color_primary');
-                                        const preview = document.getElementById('color_preview');
-                                        if(colorInput && preview){
-                                            colorInput.addEventListener('input', () => {
-                                                preview.style.background = colorInput.value;
-                                            });
-                                        }
-                                    })();
-                                </script>
+                                <label for="color_preview">Vista previa de colores</label>
+                                <div style="display: flex; gap: 10px; height: 40px;">
+                                    <div id="color_preview" style="flex:1; border-radius:6px; background:#2767C6; border:1px solid #D4D9E2;"></div>
+                                    <div id="color_preview_dark" style="flex:1; border-radius:6px; background:#0F3F5F; border:1px solid #D4D9E2;"></div>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="form-divider">
+                            <h4>🖼️ Logo de la Empresa (Opcional)</h4>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="logo_file">Subir archivo de logo</label>
+                                <input type="file" id="logo_file" name="logo_file" accept="image/png, image/svg+xml, image/jpeg">
+                                <div class="form-hint">PNG, SVG o JPG (máx 500KB)</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="logo_svg_code">O pegar código SVG directamente</label>
+                                <textarea id="logo_svg_code" name="logo_svg_code" rows="4" placeholder="<svg>...</svg>" style="font-family: monospace; font-size: 12px;"></textarea>
+                                <div class="form-hint">Pega el código SVG de tu logo si lo tienes</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group form-group-full">
+                                <label>Vista previa del logo</label>
+                                <div id="logo_preview" style="height: 80px; border: 2px dashed #D4D9E2; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #F8F9FA; padding: 10px;">
+                                    <span style="color: #6B7280; font-size: 13px;">Vista previa del logo aparecerá aquí</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <script>
+                            (function(){
+                                // Color pickers
+                                const colorInput = document.getElementById('color_primary');
+                                const colorDarkInput = document.getElementById('color_primary_dark');
+                                const preview = document.getElementById('color_preview');
+                                const previewDark = document.getElementById('color_preview_dark');
+
+                                if(colorInput && preview){
+                                    colorInput.addEventListener('input', () => {
+                                        preview.style.background = colorInput.value;
+                                    });
+                                }
+                                if(colorDarkInput && previewDark){
+                                    colorDarkInput.addEventListener('input', () => {
+                                        previewDark.style.background = colorDarkInput.value;
+                                    });
+                                }
+
+                                // Logo preview
+                                const logoFile = document.getElementById('logo_file');
+                                const logoSvgCode = document.getElementById('logo_svg_code');
+                                const logoPreview = document.getElementById('logo_preview');
+
+                                if(logoFile && logoPreview){
+                                    logoFile.addEventListener('change', (e) => {
+                                        const file = e.target.files[0];
+                                        if(file){
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                                if(file.type === 'image/svg+xml'){
+                                                    logoPreview.innerHTML = e.target.result;
+                                                    const svg = logoPreview.querySelector('svg');
+                                                    if(svg){
+                                                        svg.style.maxHeight = '70px';
+                                                        svg.style.width = 'auto';
+                                                    }
+                                                } else {
+                                                    logoPreview.innerHTML = `<img src="${e.target.result}" style="max-height: 70px; width: auto;">`;
+                                                }
+                                            };
+                                            if(file.type === 'image/svg+xml'){
+                                                reader.readAsText(file);
+                                            } else {
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }
+                                    });
+                                }
+
+                                if(logoSvgCode && logoPreview){
+                                    logoSvgCode.addEventListener('input', () => {
+                                        const svgCode = logoSvgCode.value.trim();
+                                        if(svgCode.startsWith('<svg') && svgCode.includes('</svg>')){
+                                            logoPreview.innerHTML = svgCode;
+                                            const svg = logoPreview.querySelector('svg');
+                                            if(svg){
+                                                svg.style.maxHeight = '70px';
+                                                svg.style.width = 'auto';
+                                            }
+                                        }
+                                    });
+                                }
+                            })();
+                        </script>
 
 
                     @elseif($stepIndex == 4)
@@ -1510,6 +1677,22 @@
         function submitStep(form, step) {
             console.log('submitStep: enviando paso', step);
 
+            // Mostrar indicador de procesamiento global
+            showProcessing(getStepName(step));
+
+            // Obtener y deshabilitar el botón de submit
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const prevBtn = form.querySelector('button[id^="btnPrev-"]');
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('loading');
+                submitBtn.dataset.originalText = submitBtn.innerHTML;
+            }
+            if (prevBtn) {
+                prevBtn.disabled = true;
+            }
+
             // Convertir FormData a JSON
             const formData = new FormData(form);
             const jsonData = {};
@@ -1535,6 +1718,7 @@
             })
             .then(result => {
                 console.log('submitStep resultado:', result);
+                hideProcessing();
                 if (result.success) {
                     console.log('Paso exitoso, actualizando progreso y navegando al siguiente');
                     updateProgress(step);
@@ -1546,8 +1730,49 @@
             })
             .catch(error => {
                 console.error('submitStep error:', error);
+                hideProcessing();
                 showError('Error: ' + error.message);
+            })
+            .finally(() => {
+                // Restaurar botones
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                    if (submitBtn.dataset.originalText) {
+                        submitBtn.innerHTML = submitBtn.dataset.originalText;
+                    }
+                }
+                if (prevBtn) {
+                    prevBtn.disabled = false;
+                }
             });
+        }
+
+        function getStepName(step) {
+            const names = {
+                1: 'Validando datos del administrador',
+                2: 'Probando conexión a base de datos',
+                3: 'Configurando tenant y tema',
+                4: 'Configurando email',
+                5: 'Configurando LDAP',
+                6: 'Ejecutando instalación completa'
+            };
+            return names[step] || 'Procesando paso ' + step;
+        }
+
+        function showProcessing(message, submessage) {
+            const indicator = document.getElementById('processingIndicator');
+            const text = document.getElementById('processingText');
+            const subtext = document.getElementById('processingSubtext');
+
+            if (text) text.textContent = message || 'Procesando...';
+            if (subtext) subtext.textContent = submessage || 'Por favor espera mientras se completa la operación';
+            if (indicator) indicator.classList.add('show');
+        }
+
+        function hideProcessing() {
+            const indicator = document.getElementById('processingIndicator');
+            if (indicator) indicator.classList.remove('show');
         }
 
         function goToNextStep() {
@@ -1570,9 +1795,20 @@
                 }
 
                 const stepKey = currentForm.querySelector('input[name="step_key"]')?.value;
+                const prevBtn = currentForm.querySelector('button[id^="btnPrev-"]');
+
+                // Mostrar loading
+                if (prevBtn) {
+                    prevBtn.disabled = true;
+                    prevBtn.classList.add('loading');
+                }
 
                 if (!stepKey) {
                     // Si no hay step_key, simplemente vuelve
+                    if (prevBtn) {
+                        prevBtn.disabled = false;
+                        prevBtn.classList.remove('loading');
+                    }
                     goToStep(currentStep - 1);
                     return;
                 }
@@ -1603,6 +1839,11 @@
                 } catch (error) {
                     console.error('Error al volver atrás:', error);
                     showError('Error: ' + error.message);
+                } finally {
+                    if (prevBtn) {
+                        prevBtn.disabled = false;
+                        prevBtn.classList.remove('loading');
+                    }
                 }
             }
         }

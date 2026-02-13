@@ -39,6 +39,26 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active')
                 ->comment('active=operativo, inactive=deshabilitado, suspended=suspendido por pago');
 
+            // ---- Plan y Límites ----
+            $table->enum('plan', ['basic', 'professional', 'enterprise'])
+                ->default('professional')
+                ->comment('Plan del tenant: basic, professional, enterprise');
+
+            $table->unsignedInteger('max_users')
+                ->default(50)
+                ->comment('Límite máximo de usuarios (0 = sin límite)');
+
+            $table->unsignedInteger('max_storage')
+                ->default(25)
+                ->comment('Límite de almacenamiento en GB (0 = sin límite)');
+
+            // ---- Tema/Colores ----
+            $table->string('primary_color', 7)->default('#1a56db')
+                ->comment('Color primario del tema HEX (ej: #1a56db)');
+
+            $table->string('secondary_color', 7)->default('#1e3a5f')
+                ->comment('Color secundario/oscuro del tema HEX (ej: #1e3a5f)');
+
             // ---- Creador/Admin ----
             $table->unsignedBigInteger('created_by')->nullable()
                 ->comment('FK al usuario que creó este tenant (superadmin global)');
@@ -61,6 +81,7 @@ return new class extends Migration
             // ---- Índices ----
             $table->index('domain', 'idx_tenants_domain');
             $table->index('status', 'idx_tenants_status');
+            $table->index('plan', 'idx_tenants_plan');
             $table->index('created_by', 'idx_tenants_created_by');
         });
 

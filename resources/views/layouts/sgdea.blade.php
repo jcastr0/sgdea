@@ -25,28 +25,32 @@
     {{-- Estilos compilados --}}
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
-    {{-- Variables CSS del tenant/tema --}}
-    @if(isset($themeConfig))
+    {{-- Variables CSS del tenant/tema - SIEMPRE se inyectan --}}
     <style>
         :root {
-            --tenant-primary: {{ $themeConfig->color_primary ?? '#2563eb' }};
-            --tenant-primary-hover: {{ $themeConfig->color_secondary ?? '#1d4ed8' }};
-            --tenant-secondary: {{ $themeConfig->color_secondary ?? '#475569' }};
-            --tenant-accent: {{ $themeConfig->color_accent ?? '#10b981' }};
-            --tenant-error: {{ $themeConfig->color_error ?? '#ef4444' }};
-            --tenant-success: {{ $themeConfig->color_success ?? '#22c55e' }};
-            --tenant-warning: {{ $themeConfig->color_warning ?? '#f59e0b' }};
+            --tenant-primary: {{ $tenantPrimaryColor ?? '#1a56db' }};
+            --tenant-secondary: {{ $tenantSecondaryColor ?? '#1e3a5f' }};
+            --tenant-primary-hover: {{ $tenantPrimaryColor ?? '#1a56db' }}dd;
+        }
+
+        /* Clases de utilidad para usar colores del tenant */
+        .bg-tenant-primary { background-color: var(--tenant-primary); }
+        .bg-tenant-secondary { background-color: var(--tenant-secondary); }
+        .text-tenant-primary { color: var(--tenant-primary); }
+        .text-tenant-secondary { color: var(--tenant-secondary); }
+        .border-tenant-primary { border-color: var(--tenant-primary); }
+        .border-tenant-secondary { border-color: var(--tenant-secondary); }
+
+        /* Estado activo del sidebar usando colores del tenant */
+        .sidebar-active {
+            background-color: color-mix(in srgb, var(--tenant-primary) 15%, transparent);
+            color: var(--tenant-primary);
+        }
+        .dark .sidebar-active {
+            background-color: color-mix(in srgb, var(--tenant-primary) 25%, transparent);
+            color: color-mix(in srgb, var(--tenant-primary) 100%, white 30%);
         }
     </style>
-    @elseif(isset($tenant))
-    <style>
-        :root {
-            --tenant-primary: {{ $tenant->primary_color ?? '#2563eb' }};
-            --tenant-primary-hover: {{ $tenant->primary_hover_color ?? '#1d4ed8' }};
-            --tenant-secondary: {{ $tenant->secondary_color ?? '#475569' }};
-        }
-    </style>
-    @endif
 
     {{-- Estilos adicionales de la página --}}
     @stack('styles')

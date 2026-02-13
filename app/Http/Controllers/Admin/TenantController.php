@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class TenantController extends Controller
 {
@@ -311,28 +312,57 @@ class TenantController extends Controller
 
                 case 'branding':
                     $validated = $request->validate([
-                        'color_primary' => 'required|regex:/^#[0-9A-Fa-f]{6}$/i',
-                        'color_secondary' => 'required|regex:/^#[0-9A-Fa-f]{6}$/i',
-                        'color_accent' => 'required|regex:/^#[0-9A-Fa-f]{6}$/i',
-                        'dark_mode_enabled' => 'nullable',
+                        'primary_color' => 'required|regex:/^#[0-9A-Fa-f]{6}$/i',
+                        'secondary_color' => 'required|regex:/^#[0-9A-Fa-f]{6}$/i',
+                        'logo_file' => 'nullable|file|mimes:png,jpg,jpeg,svg|max:2048',
+                        'logo_svg' => 'nullable|string|max:65535',
+                        'logo_upload_type' => 'nullable|string|in:file,svg',
                     ]);
 
-                    $theme = $tenant->themeConfiguration;
-                    if ($theme) {
-                        $theme->update([
-                            'color_primary' => $validated['color_primary'],
-                            'color_secondary' => $validated['color_secondary'],
-                            'color_accent' => $validated['color_accent'],
-                            'dark_mode_enabled' => $request->has('dark_mode_enabled'),
-                        ]);
-                    } else {
-                        ThemeConfiguration::create([
-                            'tenant_id' => $tenant->id,
-                            'color_primary' => $validated['color_primary'],
-                            'color_secondary' => $validated['color_secondary'],
-                            'color_accent' => $validated['color_accent'],
-                            'dark_mode_enabled' => $request->has('dark_mode_enabled'),
-                        ]);
+                    // Actualizar colores directamente en tabla tenants
+                    $tenant->update([
+                        'primary_color' => $validated['primary_color'],
+                        'secondary_color' => $validated['secondary_color'],
+                    ]);
+
+                    // Procesar logo según el tipo de carga
+                    $logoType = $request->input('logo_upload_type', 'file');
+
+                    if ($logoType === 'file' && $request->hasFile('logo_file')) {
+                        // Subida de archivo
+                        $file = $request->file('logo_file');
+                        $filename = 'logo_' . $tenant->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs("tenants/{$tenant->id}", $filename, 'public');
+
+                        // Eliminar logo anterior si existe
+                        if ($tenant->logo_path && \Storage::disk('public')->exists($tenant->logo_path)) {
+                            \Storage::disk('public')->delete($tenant->logo_path);
+                        }
+
+                        $tenant->update(['logo_path' => $path]);
+                    } elseif ($logoType === 'svg' && !empty($validated['logo_svg'])) {
+                        // Guardar SVG como archivo
+                        $svgContent = $validated['logo_svg'];
+                        if (str_starts_with(trim($svgContent), '<svg')) {
+                            $filename = 'logo_' . $tenant->id . '_' . time() . '.svg';
+                            $path = "tenants/{$tenant->id}/{$filename}";
+
+                            // Crear directorio si no existe
+                            $directory = storage_path("app/public/tenants/{$tenant->id}");
+                            if (!is_dir($directory)) {
+                                mkdir($directory, 0755, true);
+                            }
+
+                            // Guardar SVG
+                            \Storage::disk('public')->put($path, $svgContent);
+
+                            // Eliminar logo anterior si existe
+                            if ($tenant->logo_path && \Storage::disk('public')->exists($tenant->logo_path)) {
+                                \Storage::disk('public')->delete($tenant->logo_path);
+                            }
+
+                            $tenant->update(['logo_path' => $path]);
+                        }
                     }
                     break;
 

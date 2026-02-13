@@ -429,20 +429,42 @@ class SetupController extends Controller
             ]);
 
             // 6. CREAR CONFIGURACIÓN DE TEMA (usar por defecto si no se proporciona)
+            // Guardar logo SVG si se proporcionó código
+            $logoPath = $tenantAndThemeData['logo_path'] ?? null;
+            if (!empty($tenantAndThemeData['logo_svg_code'])) {
+                $svgCode = $tenantAndThemeData['logo_svg_code'];
+                // Sanitizar el SVG
+                if (strpos($svgCode, '<svg') !== false && strpos($svgCode, '</svg>') !== false) {
+                    $logoFileName = 'tenant_' . $tenant->id . '_logo.svg';
+                    $logoFullPath = public_path('images/tenants/' . $logoFileName);
+
+                    // Crear directorio si no existe
+                    if (!file_exists(public_path('images/tenants'))) {
+                        mkdir(public_path('images/tenants'), 0755, true);
+                    }
+
+                    file_put_contents($logoFullPath, $svgCode);
+                    $logoPath = '/images/tenants/' . $logoFileName;
+                }
+            }
+
             ThemeConfiguration::create([
                 'tenant_id' => $tenant->id,
                 'color_primary' => $tenantAndThemeData['color_primary'] ?? '#2767C6',
-                'color_primary_dark' => $tenantAndThemeData['color_primary_dark'] ?? '#0F3F5F',
-                'color_primary_darker' => $tenantAndThemeData['color_primary_darker'] ?? '#102544',
-                'color_accent' => $tenantAndThemeData['color_accent'] ?? '#B23A3A',
-                'color_neutral_warm' => $tenantAndThemeData['color_neutral_warm'] ?? '#E3D2B5',
+                'color_secondary' => $tenantAndThemeData['color_primary_dark'] ?? '#0F3F5F', // sidebar/dark color
+                'color_accent' => $tenantAndThemeData['color_accent'] ?? '#10b981',
                 'color_bg_light' => $tenantAndThemeData['color_bg_light'] ?? '#F5F7FA',
+                'color_bg_dark' => $tenantAndThemeData['color_primary_dark'] ?? '#0F3F5F',
                 'color_border' => $tenantAndThemeData['color_border'] ?? '#D4D9E2',
                 'color_text_primary' => $tenantAndThemeData['color_text_primary'] ?? '#1F2933',
                 'color_text_secondary' => $tenantAndThemeData['color_text_secondary'] ?? '#6B7280',
-                'logo_path' => $tenantAndThemeData['logo_path'] ?? null,
-                'is_custom' => (!empty($tenantAndThemeData['color_primary']) || !empty($tenantAndThemeData['logo_path'])) ? true : false,
+                'dark_mode_enabled' => true,
             ]);
+
+            // Actualizar tenant con logo si se proporcionó
+            if ($logoPath) {
+                $tenant->update(['logo_path' => $logoPath]);
+            }
 
             // 7. MARCAR SETUP COMO COMPLETADO
             file_put_contents(storage_path('.setup_completed'), json_encode([
@@ -571,12 +593,16 @@ class SetupController extends Controller
             $mapped['tenant_admin_name'] = $data['tenant_admin_name'] ?? null;
             $mapped['tenant_admin_email'] = $data['tenant_admin_email'] ?? null;
             $mapped['color_primary'] = $data['color_primary'] ?? '#2767C6';
+            $mapped['color_primary_dark'] = $data['color_primary_dark'] ?? '#0F3F5F';
             $mapped['logo_file'] = $data['logo_file'] ?? null;
+            $mapped['logo_svg_code'] = $data['logo_svg_code'] ?? null;
         }
 
         if ($stepKey === 'setup_step_theme_applied') {
             $mapped['color_primary'] = $data['color_primary'] ?? '#2767C6';
+            $mapped['color_primary_dark'] = $data['color_primary_dark'] ?? '#0F3F5F';
             $mapped['logo_file'] = $data['logo_file'] ?? null;
+            $mapped['logo_svg_code'] = $data['logo_svg_code'] ?? null;
         }
 
         return $mapped;

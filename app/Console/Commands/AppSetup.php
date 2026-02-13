@@ -322,20 +322,23 @@ class AppSetup extends Command
         $this->line('║    • Tema oscuro: habilitado                                 ║');
         $this->line('╠══════════════════════════════════════════════════════════════╣');
 
-        if (!$this->option('migrate')) {
-            $this->line('║  Credenciales de acceso:                                     ║');
+        if ($this->isProduction) {
+            $this->line('║  🔒 MODO PRODUCCIÓN                                          ║');
+            $this->line('║    • Solo se crearon: SYSTEM, permisos, roles globales       ║');
+            $this->line('║    • NO se crearon tenants ni usuarios de ejemplo            ║');
+            $this->line('╠══════════════════════════════════════════════════════════════╣');
+            $this->line('║  Próximos pasos:                                             ║');
+            $this->line('║    1. Crear superadmin global:                               ║');
+            $this->line('║       php artisan app:create-superadmin --global             ║');
+            $this->line('║    2. Acceder al sistema y crear tenants                     ║');
+            $this->line('║    3. Configurar SSL y dominio                               ║');
+            $this->line('║    4. Configurar backups automáticos                         ║');
+        } else {
+            $this->line('║  Credenciales de acceso (solo desarrollo):                   ║');
             $this->line('║    • admin@demo.sgdea.local / Admin123!                      ║');
             $this->line('║    • Usuario SYSTEM (ID=1) creado para auditoría             ║');
             $this->line('╠══════════════════════════════════════════════════════════════╣');
-        }
-
-        $this->line('║  Próximos pasos:                                             ║');
-
-        if ($this->isProduction) {
-            $this->line('║    1. Crear superadmin: php artisan app:create-superadmin    ║');
-            $this->line('║    2. Configurar SSL y dominio                               ║');
-            $this->line('║    3. Configurar backups automáticos                         ║');
-        } else {
+            $this->line('║  Próximos pasos:                                             ║');
             $this->line('║    1. Acceder a: http://localhost:8080                       ║');
             $this->line('║    2. Login con: admin@demo.sgdea.local / Admin123!          ║');
         }

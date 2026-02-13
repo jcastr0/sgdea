@@ -57,6 +57,9 @@ class TenantService
                 'domain' => $data['domain'],
                 'status' => $data['status'] ?? 'active',
                 'created_by' => $data['created_by'] ?? auth()->id(),
+                // Colores del tema - guardados directamente en la tabla tenants
+                'primary_color' => $data['color_primary'] ?? '#2563eb',
+                'secondary_color' => $data['color_secondary'] ?? '#0f172a',
             ];
 
             // Agregar campos opcionales si existen en la tabla
@@ -71,31 +74,38 @@ class TenantService
             }
 
             $tenant = Tenant::create($tenantData);
-            $result['steps'][] = ['step' => 1, 'action' => 'Tenant creado', 'id' => $tenant->id];
+            $result['steps'][] = ['step' => 1, 'action' => 'Tenant creado con colores personalizados', 'id' => $tenant->id];
 
             // =====================
-            // PASO 2: Crear Theme
+            // PASO 2: Theme (legacy - mantener compatibilidad)
             // =====================
-            $result['steps'][] = ['step' => 2, 'action' => 'Creando configuración de tema...'];
+            // NOTA: Los colores principales ya están en la tabla tenants.
+            // Este paso se mantiene por compatibilidad con el sistema legacy de themes.
+            $result['steps'][] = ['step' => 2, 'action' => 'Configurando tema (colores guardados en tenant)...'];
 
-            $themeData = [
-                'tenant_id' => $tenant->id,
-                'color_primary' => $data['color_primary'] ?? '#2563eb',
-                'color_secondary' => $data['color_secondary'] ?? '#0f172a',
-                'color_accent' => $data['color_accent'] ?? '#10b981',
-                'color_error' => '#ef4444',
-                'color_success' => '#10b981',
-                'color_warning' => '#f59e0b',
-                'color_bg_light' => '#f8fafc',
-                'color_bg_dark' => '#0f172a',
-                'color_text_primary' => '#1f2937',
-                'color_text_secondary' => '#6b7280',
-                'color_border' => '#e5e7eb',
-                'dark_mode_enabled' => $data['dark_mode_enabled'] ?? true,
-            ];
+            // Solo crear ThemeConfiguration si la tabla existe y se necesita para compatibilidad
+            if (Schema::hasTable('theme_configurations')) {
+                $themeData = [
+                    'tenant_id' => $tenant->id,
+                    'color_primary' => $data['color_primary'] ?? '#2563eb',
+                    'color_secondary' => $data['color_secondary'] ?? '#0f172a',
+                    'color_accent' => $data['color_accent'] ?? '#10b981',
+                    'color_error' => '#ef4444',
+                    'color_success' => '#10b981',
+                    'color_warning' => '#f59e0b',
+                    'color_bg_light' => '#f8fafc',
+                    'color_bg_dark' => '#0f172a',
+                    'color_text_primary' => '#1f2937',
+                    'color_text_secondary' => '#6b7280',
+                    'color_border' => '#e5e7eb',
+                    'dark_mode_enabled' => $data['dark_mode_enabled'] ?? true,
+                ];
 
-            $theme = ThemeConfiguration::create($themeData);
-            $result['steps'][] = ['step' => 2, 'action' => 'Tema creado', 'id' => $theme->id];
+                $theme = ThemeConfiguration::create($themeData);
+                $result['steps'][] = ['step' => 2, 'action' => 'Tema legacy creado', 'id' => $theme->id];
+            } else {
+                $result['steps'][] = ['step' => 2, 'action' => 'Colores guardados en tenant (sin theme_configurations)'];
+            }
 
             // =====================
             // PASO 3: Crear Rol Admin

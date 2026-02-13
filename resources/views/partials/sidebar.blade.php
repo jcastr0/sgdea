@@ -13,7 +13,15 @@
     <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-slate-700">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
             @if(isset($tenant) && $tenant->logo_path)
-                <img src="{{ asset($tenant->logo_path) }}" alt="Logo" class="h-8 w-auto">
+                {{-- Logo para modo claro --}}
+                <img src="{{ asset($tenant->logo_path) }}" alt="Logo" class="h-8 w-auto dark:hidden">
+                {{-- Logo para modo oscuro: usar logo_path_light si existe, si no el mismo logo --}}
+                <img src="{{ asset($tenant->logo_path_light ?? $tenant->logo_path) }}" alt="Logo" class="h-8 w-auto hidden dark:block">
+            @elseif(isset($tenant))
+                <div class="flex items-center justify-center h-8 w-8 rounded-lg text-white font-bold bg-tenant-primary"
+                     style="background-color: var(--tenant-primary)">
+                    {{ strtoupper(substr($tenant->name ?? 'S', 0, 1)) }}
+                </div>
             @else
                 <div class="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-600 text-white font-bold">
                     S
@@ -71,7 +79,7 @@
                         href="{{ route('facturas.index') }}"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                             {{ request()->routeIs('facturas.*')
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                ? 'sidebar-active'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700' }}"
                         x-tooltip="isCollapsed ? 'Facturas' : null"
                     >
@@ -89,7 +97,7 @@
                         href="{{ route('terceros.index') }}"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                             {{ request()->routeIs('terceros.*')
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                ? 'sidebar-active'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700' }}"
                         x-tooltip="isCollapsed ? 'Terceros' : null"
                     >
@@ -107,7 +115,7 @@
                         href="{{ route('importaciones.index') }}"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                             {{ request()->routeIs('importaciones.*')
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                ? 'sidebar-active'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700' }}"
                         x-tooltip="isCollapsed ? 'Importaciones' : null"
                     >
@@ -135,7 +143,7 @@
                         href="{{ route('dashboard') }}"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                             {{ request()->routeIs('dashboard')
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                ? 'sidebar-active'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700' }}"
                         x-tooltip="isCollapsed ? 'Dashboard' : null"
                     >
@@ -152,7 +160,7 @@
                         href="{{ route('admin.auditoria.index') }}"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                             {{ request()->routeIs('admin.auditoria.*')
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                ? 'sidebar-active'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700' }}"
                         x-tooltip="isCollapsed ? 'Auditoría' : null"
                     >
@@ -281,10 +289,14 @@
         <div class="flex items-center gap-3">
             <div class="flex-shrink-0">
                 @if(isset($tenant) && $tenant->logo_path)
-                    <img src="{{ asset($tenant->logo_path) }}" alt="{{ $tenant->name }}" class="h-10 w-10 rounded-full object-cover">
+                    {{-- Logo para modo claro --}}
+                    <img src="{{ asset($tenant->logo_path) }}" alt="{{ $tenant->name }}" class="h-10 w-10 rounded-full object-cover dark:hidden">
+                    {{-- Logo para modo oscuro: usar logo_path_light si existe --}}
+                    <img src="{{ asset($tenant->logo_path_light ?? $tenant->logo_path) }}" alt="{{ $tenant->name }}" class="h-10 w-10 rounded-full object-cover hidden dark:block">
                 @elseif(isset($tenant))
-                    <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                        {{ substr($tenant->name ?? 'T', 0, 1) }}
+                    <div class="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold"
+                         style="background-color: var(--tenant-primary)">
+                        {{ strtoupper(substr($tenant->name ?? 'T', 0, 1)) }}
                     </div>
                 @else
                     <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">

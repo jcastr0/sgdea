@@ -29,15 +29,21 @@ class AppServiceProvider extends ServiceProvider
         // Compartir el tenant del usuario autenticado con todas las vistas
         View::composer('*', function ($view) {
             $tenant = null;
-            $themeConfig = null;
+            $tenantPrimaryColor = '#1a56db';
+            $tenantSecondaryColor = '#1e3a5f';
 
             if (Auth::check()) {
                 $user = Auth::user();
 
-                // Cargar el tenant con su configuración de tema
+                // Cargar el tenant directamente (sin relaciones de tema)
                 if ($user->tenant_id) {
-                    $tenant = Tenant::with('themeConfiguration')->find($user->tenant_id);
-                    $themeConfig = $tenant?->themeConfiguration;
+                    $tenant = Tenant::find($user->tenant_id);
+
+                    // Obtener colores DIRECTAMENTE del tenant
+                    if ($tenant) {
+                        $tenantPrimaryColor = $tenant->primary_color ?? '#1a56db';
+                        $tenantSecondaryColor = $tenant->secondary_color ?? '#1e3a5f';
+                    }
                 }
             }
 
@@ -45,8 +51,11 @@ class AppServiceProvider extends ServiceProvider
             if (!$view->offsetExists('tenant')) {
                 $view->with('tenant', $tenant);
             }
-            if (!$view->offsetExists('themeConfig')) {
-                $view->with('themeConfig', $themeConfig);
+            if (!$view->offsetExists('tenantPrimaryColor')) {
+                $view->with('tenantPrimaryColor', $tenantPrimaryColor);
+            }
+            if (!$view->offsetExists('tenantSecondaryColor')) {
+                $view->with('tenantSecondaryColor', $tenantSecondaryColor);
             }
         });
     }
