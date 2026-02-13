@@ -5,14 +5,13 @@
 
 @section('breadcrumbs')
 <x-breadcrumb :items="[
-    ['label' => 'Inicio', 'url' => route('dashboard')],
     ['label' => 'Terceros', 'url' => route('terceros.index')],
     ['label' => $tercero->nombre_razon_social],
 ]" />
 @endsection
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="max-w-7xl mx-auto space-y-6">
     {{-- Header con perfil --}}
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8">

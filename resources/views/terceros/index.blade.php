@@ -5,7 +5,6 @@
 
 @section('breadcrumbs')
 <x-breadcrumb :items="[
-    ['label' => 'Inicio', 'url' => route('dashboard')],
     ['label' => 'Terceros'],
 ]" />
 @endsection
