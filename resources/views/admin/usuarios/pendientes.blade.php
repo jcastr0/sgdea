@@ -1,4 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.sgdea')
+
+@section('page-title', 'Aprobación de Usuarios')
 
 @section('content')
 <div class="admin-usuarios-container">

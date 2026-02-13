@@ -1,4 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.sgdea')
+
+@section('page-title', 'Registro Pendiente')
 
 @section('content')
 <div class="pending-container" style="background: linear-gradient(135deg, {{ $theme->color_primary ?? '#2767C6' }} 0%, {{ $theme->color_secondary ?? '#102544' }} 100%);">

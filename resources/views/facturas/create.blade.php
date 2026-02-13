@@ -1,4 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.sgdea')
+
+@section('page-title', isset($factura) ? 'Editar Factura' : 'Nueva Factura')
 
 @section('content')
 <div class="form-container">

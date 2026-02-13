@@ -1,4 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.sgdea')
+
+@section('page-title', 'Historial de Aprobaciones')
 
 @section('content')
 <div class="admin-historial-container">

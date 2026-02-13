@@ -1,6 +1,6 @@
-@extends('layouts.main')
+@extends('layouts.sgdea')
 
-@section('title', 'Importaciones')
+@section('page-title', 'Importaciones')
 
 @section('content')
 <div class="importaciones-container">
