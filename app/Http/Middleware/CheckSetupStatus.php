@@ -15,22 +15,42 @@ class CheckSetupStatus
     {
         $setupCompleted = file_exists(storage_path('.setup_completed'));
 
-        // Si el setup está completado y acceden a /setup, bloquear
-        if ($setupCompleted && $request->path() === 'setup') {
-            abort(403, 'El sistema ya ha sido configurado.');
+        // Si el setup está completado, permitir acceso normal (excepto a /setup)
+        if ($setupCompleted) {
+            // Bloquear acceso a rutas de setup si ya está configurado
+            if (str_starts_with($request->path(), 'setup')) {
+                abort(403, 'El sistema ya ha sido configurado.');
+            }
+            return $next($request);
         }
 
-        // Si el setup NO está completado y acceden a otro lado (que no sea /setup), redirigir a /setup
-        if (!$setupCompleted && $request->path() !== 'setup' && $request->path() !== 'setup/process') {
-            // Excepciones: permitir acceso a assets, health checks, etc.
-            $exceptions = ['health', 'api/health', '', 'up'];
+        // Setup NO completado - verificar si debe redirigir
+        // Excepciones: permitir rutas de setup y assets
+        $setupRoutes = ['setup', 'setup/process', 'setup/test-db-connection', 'setup/validate-access', 'setup/go-back'];
+        $assetPaths = ['css', 'js', 'images', 'fonts', 'vendor', 'build', 'favicon'];
+        $otherExceptions = ['health', 'api/health', '', 'up', 'login', 'storage'];
 
-            if (!in_array($request->path(), $exceptions)) {
-                return redirect()->route('setup.show');
+        $currentPath = $request->path();
+
+        // Permitir rutas de setup
+        if (in_array($currentPath, $setupRoutes) || str_starts_with($currentPath, 'setup/')) {
+            return $next($request);
+        }
+
+        // Permitir assets
+        foreach ($assetPaths as $assetPath) {
+            if (str_starts_with($currentPath, $assetPath)) {
+                return $next($request);
             }
         }
 
-        return $next($request);
+        // Permitir otras excepciones
+        if (in_array($currentPath, $otherExceptions)) {
+            return $next($request);
+        }
+
+        // Redirigir a setup
+        return redirect()->route('setup.show');
     }
 }
 

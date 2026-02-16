@@ -1943,7 +1943,7 @@
 
             // Redirigir después de 3 segundos
             setTimeout(() => {
-                window.location.href = '{{ route("auth.login") }}';
+                window.location.href = '{{ route("login") }}';
             }, 3000);
         }
 

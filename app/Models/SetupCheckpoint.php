@@ -13,6 +13,7 @@ class SetupCheckpoint extends Model
         'status',
         'phase',
         'component',
+        'optional',
         'completion_date',
         'error_message',
     ];

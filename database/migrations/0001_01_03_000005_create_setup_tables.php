@@ -22,35 +22,38 @@ return new class extends Migration
             $table->id()
                 ->comment('ID único del checkpoint');
 
-            $table->string('key')->unique()
-                ->comment('Identificador único del checkpoint (ej: database_configured, admin_created)');
+            $table->string('step_key')->unique()
+                ->comment('Identificador único del checkpoint (ej: setup_step_superadmin_created)');
 
-            $table->string('name')
+            $table->string('step_name')
                 ->comment('Nombre legible del checkpoint');
 
-            $table->text('description')->nullable()
-                ->comment('Descripción de lo que hace este checkpoint');
-
-            $table->integer('order')->default(0)
+            $table->integer('step_order')->default(0)
                 ->comment('Orden de ejecución del checkpoint');
 
-            $table->boolean('is_required')->default(true)
-                ->comment('TRUE si es obligatorio completarlo');
+            $table->string('phase')->default('FASE_1')
+                ->comment('Fase del setup (FASE_1, FASE_2, etc)');
 
-            $table->boolean('is_completed')->default(false)
-                ->comment('TRUE si ya se completó');
+            $table->string('component')->nullable()
+                ->comment('Componente o descripción de lo que hace');
 
-            $table->timestamp('completed_at')->nullable()
+            $table->string('status')->default('pending')
+                ->comment('Estado: pending, completed, skipped, error');
+
+            $table->boolean('optional')->default(false)
+                ->comment('TRUE si es opcional');
+
+            $table->timestamp('completion_date')->nullable()
                 ->comment('Fecha/hora cuando se completó');
 
-            $table->json('metadata')->nullable()
-                ->comment('Datos adicionales del checkpoint (JSON)');
+            $table->text('error_message')->nullable()
+                ->comment('Mensaje de error si falló');
 
             $table->timestamps();
 
             // ---- Índices ----
-            $table->index('order', 'idx_setup_checkpoints_order');
-            $table->index('is_completed', 'idx_setup_checkpoints_completed');
+            $table->index('step_order', 'idx_setup_checkpoints_order');
+            $table->index('status', 'idx_setup_checkpoints_status');
         });
 
         // =========================================
@@ -61,26 +64,20 @@ return new class extends Migration
             $table->id()
                 ->comment('ID único del progreso');
 
-            $table->string('current_step')
-                ->comment('Paso actual del setup');
-
-            $table->integer('step_number')->default(1)
+            $table->integer('current_step')->default(1)
                 ->comment('Número del paso actual');
 
-            $table->integer('total_steps')->default(5)
+            $table->integer('total_steps')->default(7)
                 ->comment('Total de pasos del setup');
 
-            $table->boolean('is_completed')->default(false)
-                ->comment('TRUE si el setup está completo');
+            $table->integer('percentage')->default(0)
+                ->comment('Porcentaje de progreso (0-100)');
 
-            $table->timestamp('started_at')->nullable()
-                ->comment('Fecha/hora de inicio del setup');
+            $table->string('last_completed_phase')->nullable()
+                ->comment('Última fase completada');
 
-            $table->timestamp('completed_at')->nullable()
-                ->comment('Fecha/hora de finalización');
-
-            $table->json('data')->nullable()
-                ->comment('Datos recopilados durante el setup (JSON)');
+            $table->json('progress_data')->nullable()
+                ->comment('Datos adicionales del progreso (JSON)');
 
             $table->timestamps();
         });

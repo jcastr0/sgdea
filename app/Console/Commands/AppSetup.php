@@ -100,6 +100,9 @@ class AppSetup extends Command
         // Paso 5: Configurar tema oscuro por defecto
         $this->configureDarkMode();
 
+        // Paso 6: Marcar setup como completado
+        $this->markSetupComplete();
+
         $this->showSummary();
 
         return Command::SUCCESS;
@@ -302,6 +305,40 @@ class AppSetup extends Command
             }
         } catch (\Exception $e) {
             $this->warn('   ⚠️  No se pudo configurar tema: ' . $e->getMessage());
+        }
+
+        $this->newLine();
+    }
+
+    /**
+     * Marcar setup como completado
+     *
+     * Crea el archivo .setup_completed en storage para evitar
+     * que el middleware redirija al wizard de setup.
+     */
+    protected function markSetupComplete(): void
+    {
+        $this->info('🏁 Paso 6: Marcando setup como completado...');
+
+        $setupFile = storage_path('.setup_completed');
+
+        try {
+            // Crear archivo con información del setup
+            $setupInfo = [
+                'completed_at' => now()->toIso8601String(),
+                'completed_by' => 'artisan app:setup',
+                'environment' => $this->environment,
+                'php_version' => PHP_VERSION,
+                'laravel_version' => app()->version(),
+            ];
+
+            File::put($setupFile, json_encode($setupInfo, JSON_PRETTY_PRINT));
+
+            $this->line('   ✅ Archivo .setup_completed creado en storage/');
+            $this->line('   ✅ El sistema ya no redirigirá al wizard de setup');
+        } catch (\Exception $e) {
+            $this->error('   ❌ Error al crear archivo: ' . $e->getMessage());
+            $this->warn('   ⚠️  Debes crear manualmente el archivo: ' . $setupFile);
         }
 
         $this->newLine();
