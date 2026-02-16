@@ -13,7 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Middlewares globales
         $middleware->append(\App\Http\Middleware\DetectTenant::class);
-        $middleware->append(\App\Http\Middleware\CheckSetupStatus::class);
+        // TODO: Reactivar cuando el wizard de setup esté corregido
+        // $middleware->append(\App\Http\Middleware\CheckSetupStatus::class);
 
         // Middleware para rutas protegidas
         $middleware->alias([

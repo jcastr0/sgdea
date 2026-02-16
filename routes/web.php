@@ -11,12 +11,12 @@ use App\Http\Controllers\ImportacionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ConfigurationController;
 
-// Rutas de setup (sin restricciones mientras no esté completo)
-Route::get('/setup', [SetupController::class, 'show'])->name('setup.show');
-Route::post('/setup/process', [SetupController::class, 'process'])->name('setup.process');
-Route::post('/setup/test-db-connection', [SetupController::class, 'testDatabaseConnection'])->name('setup.test-db-connection');
-Route::post('/setup/validate-access', [SetupController::class, 'validateStepAccess'])->name('setup.validate-access');
-Route::post('/setup/go-back', [SetupController::class, 'goBack'])->name('setup.go-back');
+// TODO: Rutas de setup desactivadas temporalmente - Reactivar cuando el wizard esté corregido
+// Route::get('/setup', [SetupController::class, 'show'])->name('setup.show');
+// Route::post('/setup/process', [SetupController::class, 'process'])->name('setup.process');
+// Route::post('/setup/test-db-connection', [SetupController::class, 'testDatabaseConnection'])->name('setup.test-db-connection');
+// Route::post('/setup/validate-access', [SetupController::class, 'validateStepAccess'])->name('setup.validate-access');
+// Route::post('/setup/go-back', [SetupController::class, 'goBack'])->name('setup.go-back');
 
 // Redirigir root a login
 Route::get('/', function () {

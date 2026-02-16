@@ -13,7 +13,11 @@ class CheckSetupStatus
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $setupCompleted = file_exists(storage_path('.setup_completed'));
+        // Verificar si el setup está completado
+        // Soporta múltiples ubicaciones para compatibilidad
+        $setupCompleted = file_exists(storage_path('.setup_completed'))
+                       || file_exists(storage_path('app/.setup_completed'))
+                       || file_exists(base_path('.setup_completed'));
 
         // Si el setup está completado, permitir acceso normal (excepto a /setup)
         if ($setupCompleted) {
@@ -28,7 +32,7 @@ class CheckSetupStatus
         // Excepciones: permitir rutas de setup y assets
         $setupRoutes = ['setup', 'setup/process', 'setup/test-db-connection', 'setup/validate-access', 'setup/go-back'];
         $assetPaths = ['css', 'js', 'images', 'fonts', 'vendor', 'build', 'favicon'];
-        $otherExceptions = ['health', 'api/health', '', 'up', 'login', 'storage'];
+        $otherExceptions = ['health', 'api/health', '', '/', 'up', 'login', 'storage', 'livewire'];
 
         $currentPath = $request->path();
 
@@ -46,6 +50,11 @@ class CheckSetupStatus
 
         // Permitir otras excepciones
         if (in_array($currentPath, $otherExceptions)) {
+            return $next($request);
+        }
+
+        // Permitir livewire
+        if (str_starts_with($currentPath, 'livewire')) {
             return $next($request);
         }
 
