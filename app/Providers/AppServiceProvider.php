@@ -31,18 +31,24 @@ class AppServiceProvider extends ServiceProvider
             $tenant = null;
             $tenantPrimaryColor = '#1a56db';
             $tenantSecondaryColor = '#1e3a5f';
+            $tenantDarkModeEnabled = null; // null = usar preferencia del usuario
 
             if (Auth::check()) {
                 $user = Auth::user();
 
                 // Cargar el tenant directamente (sin relaciones de tema)
                 if ($user->tenant_id) {
-                    $tenant = Tenant::find($user->tenant_id);
+                    $tenant = Tenant::with('themeConfiguration')->find($user->tenant_id);
 
                     // Obtener colores DIRECTAMENTE del tenant
                     if ($tenant) {
                         $tenantPrimaryColor = $tenant->primary_color ?? '#1a56db';
                         $tenantSecondaryColor = $tenant->secondary_color ?? '#1e3a5f';
+
+                        // Obtener modo dark de themeConfiguration si existe
+                        if ($tenant->themeConfiguration) {
+                            $tenantDarkModeEnabled = $tenant->themeConfiguration->dark_mode_enabled ?? null;
+                        }
                     }
                 }
             }
@@ -56,6 +62,9 @@ class AppServiceProvider extends ServiceProvider
             }
             if (!$view->offsetExists('tenantSecondaryColor')) {
                 $view->with('tenantSecondaryColor', $tenantSecondaryColor);
+            }
+            if (!$view->offsetExists('tenantDarkModeEnabled')) {
+                $view->with('tenantDarkModeEnabled', $tenantDarkModeEnabled);
             }
         });
     }

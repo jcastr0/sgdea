@@ -17,20 +17,19 @@ class DetectTenant
         // Extraer dominio de la URL
         $host = $request->getHost();
 
-        // Buscar tenant por dominio
+        // Buscar tenant por dominio exacto o parcial
         $tenant = Tenant::where('domain', $host)
             ->orWhere('domain', 'like', '%' . $host)
             ->first();
 
-        // Si no encuentra tenant específico, usar el primero (default)
-        if (!$tenant) {
-            $tenant = Tenant::active()->first();
-        }
-
-        // Guardar en sesión
+        // Si encuentra tenant por dominio, guardar en sesión
+        // Si NO encuentra, NO asignar tenant por defecto (será página genérica SGDEA)
         if ($tenant) {
             session(['tenant_id' => $tenant->id, 'tenant' => $tenant]);
             $request->attributes->add(['tenant' => $tenant]);
+        } else {
+            // Limpiar cualquier tenant previo de la sesión
+            session()->forget(['tenant_id', 'tenant', 'current_tenant']);
         }
 
         return $next($request);

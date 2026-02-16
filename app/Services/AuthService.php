@@ -11,6 +11,7 @@ class AuthService
 {
     /**
      * Detectar tenant por dominio de la URL actual
+     * Si no encuentra tenant por dominio, retorna null (para mostrar página genérica SGDEA)
      */
     public function detectTenant()
     {
@@ -19,15 +20,20 @@ class AuthService
         // Buscar tenant por dominio exacto
         $tenant = Tenant::where('domain', $host)->first();
 
-        // Si no encuentra, buscar tenant por defecto (el primero activo)
+        // Si no encuentra por dominio exacto, intentar match parcial
         if (!$tenant) {
-            $tenant = Tenant::where('status', 'active')->first();
+            $tenant = Tenant::where('domain', 'like', '%' . $host)->first();
+        }
+
+        // Si no encuentra tenant por dominio, retornar null
+        // NO asignar tenant por defecto - mostrará página genérica SGDEA
+        if (!$tenant) {
+            session()->forget(['current_tenant', 'tenant_id', 'tenant']);
+            return null;
         }
 
         // Guardar en sesión para acceso rápido
-        if ($tenant) {
-            session(['current_tenant' => $tenant]);
-        }
+        session(['current_tenant' => $tenant]);
 
         return $tenant;
     }

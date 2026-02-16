@@ -1,7 +1,17 @@
 <!DOCTYPE html>
+@php
+    // Si el tenant tiene configuración de dark_mode, usar esa. Si no, usar preferencia del usuario.
+    $forceDarkMode = isset($tenantDarkModeEnabled) && $tenantDarkModeEnabled !== null;
+    $darkModeValue = $forceDarkMode ? ($tenantDarkModeEnabled ? 'true' : 'false') : "localStorage.getItem('darkMode') === 'true'";
+@endphp
+<!-- DEBUG: tenantDarkModeEnabled={{ $tenantDarkModeEnabled ?? 'NULL' }} | forceDarkMode={{ $forceDarkMode ? 'TRUE' : 'FALSE' }} -->
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
-      x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }"
-      x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))"
+      @if($forceDarkMode)
+          x-data="{ darkMode: {{ $tenantDarkModeEnabled ? 'true' : 'false' }} }"
+      @else
+          x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }"
+          x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))"
+      @endif
       :class="{ 'dark': darkMode }">
 <head>
     <meta charset="utf-8">
