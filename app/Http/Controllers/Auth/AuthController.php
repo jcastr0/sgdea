@@ -27,8 +27,21 @@ class AuthController extends Controller
     {
         $tenant = $this->authService->detectTenant();
 
+        // Si no hay tenant, mostrar login genérico del sistema (para superadmin global)
         if (!$tenant) {
-            abort(404, 'Empresa no encontrada');
+            return view('auth.login', [
+                'tenant' => null,
+                'theme' => (object) [
+                    'color_primary' => '#1a56db',
+                    'color_primary_dark' => '#1648b8',
+                    'color_secondary' => '#1e3a5f',
+                ],
+                'logo' => null,
+                'logoLight' => null,
+                'logoDark' => null,
+                'tenantPrimaryColor' => '#1a56db',
+                'tenantSecondaryColor' => '#1e3a5f',
+            ]);
         }
 
         $theme = $this->authService->getTenantTheme($tenant);
